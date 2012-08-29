@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{4295a305-afb3-4ac8-8dcd-6e86044f2636}</ProjectGuid>
+    <ArchitectureToolsVersion>1.0.0.0</ArchitectureToolsVersion>
+    <Name>OracleModel</Name>
+    <RootNamespace>OracleModel</RootNamespace>
+    <SccProjectName>SAK</SccProjectName>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\ArchitectureTools\Microsoft.VisualStudio.TeamArchitect.ModelingProject.targets" />
+  <ItemGroup>
+    <Folder Include="ModelDefinition\" />
+    <Content Include="1-Tables\03-WASH_CYCLE.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\09-WASH_VERSION.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\08-WASH_DML_PLAN.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\04-WASH_ISTR.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\06-WASH_ISTR_COPY.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\07-WASH_ISTR_MERGE.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\05-WASH_ISTR_DELETE.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\01-PROGRESS_STATUS.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\02-PROGRESS_LOG.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\10-WASH_PROGRESS.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="2-Views\01-VIEW_WASH_ISTR_DOCUMENT.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="2-Views\02-VIEW_PROGRESS_LOG.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="2-Views\03-VIEW_WASH_LAST_PROGRESS_LOG.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="3-Sequences\01-SEQ_PROGRESS_ID.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\01-PROGRESS_TRACK.pck">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\02-WASH_ENGINE.pck">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\03-VIEW_WASH_CYCLE_CODE.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\04-WASH_DEPLOY.pck">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\01-TRG_WASH_CYCLE.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\02-TRG_WASH_ISTR.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\03-TRG_WASH_ISTR_DELETE.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\04-TRG_WASH_ISTR_COPY.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\05-TRG_WASH_ISTR_MERGE.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="ModelDefinition\OracleModel.uml">
+      <SubType>Content</SubType>
+    </Content>
+    <Folder Include="1-Tables" />
+    <Folder Include="2-Views" />
+    <Folder Include="4-Packages" />
+    <Folder Include="5-Triggers" />
+    <Folder Include="3-Sequences" />
+  </ItemGroup>
+</Project>
