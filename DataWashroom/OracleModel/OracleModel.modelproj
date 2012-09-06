@@ -25,10 +25,22 @@
     <Content Include="1-Tables\03-WASH_CYCLE.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\09-WASH_VERSION.sql">
+    <Content Include="1-Tables\08-WASH_ISTR_CHK_UK.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\08-WASH_DML_PLAN.sql">
+    <Content Include="1-Tables\09-WASH_ISTR_TOP_DK.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\10-WASH_ISTR_MUP_MK.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\11-WASH_ISTR_MUP_NA.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\13-WASH_VERSION.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\12-WASH_DML_PLAN.sql">
       <SubType>Content</SubType>
     </Content>
     <Content Include="1-Tables\04-WASH_ISTR.sql">
@@ -49,7 +61,7 @@
     <Content Include="1-Tables\02-PROGRESS_LOG.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\10-WASH_PROGRESS.sql">
+    <Content Include="1-Tables\14-WASH_PROGRESS.sql">
       <SubType>Content</SubType>
     </Content>
     <Content Include="2-Views\01-VIEW_WASH_ISTR_DOCUMENT.sql">
