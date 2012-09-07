@@ -16,6 +16,21 @@ CREATE OR REPLACE PACKAGE VPI.WASH_ENGINE IS
 ----------------------------------------------------------------------------------------------------
 
 
+FUNCTION CONCAT_STRING
+(
+	inSource		VARCHAR2,
+	inConnector		VARCHAR2,
+	inAppend		VARCHAR2
+)	RETURN			VARCHAR2;
+
+
+FUNCTION CONCAT_STRING
+(
+	inConnector		VARCHAR2,
+	inAppend		VARCHAR2
+)	RETURN	VARCHAR2;
+
+
 PROCEDURE CHECK_ISTR_TYPE
 (
 	inIstr_ID		VARCHAR2,
@@ -103,11 +118,30 @@ FUNCTION CONCAT_STRING
 	inSource		VARCHAR2,
 	inConnector		VARCHAR2,
 	inAppend		VARCHAR2
+)	RETURN			VARCHAR2
+IS
+BEGIN
+	IF inSource IS NOT NULL THEN
+		IF inAppend IS NOT NULL THEN
+			RETURN inSource || inConnector || inAppend;
+		ELSE
+			RETURN inSource;
+		END IF;
+	ELSE
+		RETURN inAppend;
+	END IF;
+END CONCAT_STRING;
+
+
+FUNCTION CONCAT_STRING
+(
+	inConnector		VARCHAR2,
+	inAppend		VARCHAR2
 )	RETURN	VARCHAR2
 IS
 BEGIN
-	IF LENGTH(inSource)	> 0 THEN
-		RETURN  inSource || inConnector || inAppend;
+	IF inAppend IS NOT NULL THEN
+		RETURN inConnector || inAppend;
 	ELSE
 		RETURN inAppend;
 	END IF;
@@ -120,11 +154,7 @@ FUNCTION WHERE_EXPRESSION
 )	RETURN		VARCHAR2
 IS
 BEGIN
-	IF TRIM(inFilter) IS NULL THEN
-		RETURN '';
-	ELSE
-		RETURN ' WHERE ' || inFilter;
-	END IF;
+	RETURN CONCAT_STRING(' WHERE ', inFilter);
 END WHERE_EXPRESSION;
 
 
@@ -296,6 +326,102 @@ WHEN NOT MATCHED THEN
 END PLAN_MERGE;
 
 
+FUNCTION GEN_CHECK_UNIQUE_KEY_SQL
+(
+	inDst_Table		VARCHAR2,
+	inDst_Filter	VARCHAR2,
+	inKey_Columns	VARCHAR2,
+	inSet_Expr		VARCHAR2,
+	inOp_Type		VARCHAR2
+)	RETURN			VARCHAR2
+IS
+	tSQL			VARCHAR2(4000);
+BEGIN
+	tSQL	:= UTL_LMS.FORMAT_MESSAGE('UPDATE	%s
+SET		%s
+WHERE	(%s)
+	IN	(SELECT %s FROM %s%s GROUP BY %s HAVING COUNT(*) %s 1)',
+	inDst_Table, inSet_Expr, inKey_Columns, inKey_Columns, inDst_Table, WHERE_EXPRESSION(inDst_Filter), inKey_Columns, inOp_Type);
+
+	IF inDst_Filter IS NOT NULL THEN
+		RETURN tSQL || UTL_LMS.FORMAT_MESSAGE('
+	AND	(%s)', inDst_Filter);
+	ELSE
+		RETURN tSQL;
+	END IF;
+END GEN_CHECK_UNIQUE_KEY_SQL;
+
+
+PROCEDURE PLAN_CHECK_UNIQUE_KEY
+(
+	inCycle_ID				VARCHAR2,
+	inIstr_Order			PLS_INTEGER,
+	inIstr_ID				VARCHAR2,
+	inIstr_Type				VARCHAR2,
+	inDst_Table				VARCHAR2,
+	inDst_Filter			VARCHAR2,
+	inKey_Columns			VARCHAR2,
+	inSet_Expr_If_Unique	VARCHAR2,
+	inSet_Expr_If_Duplicate	VARCHAR2,
+	inDescription			VARCHAR2
+)	IS
+	tIstr_Brief				VARCHAR2(1024);
+BEGIN
+	IF inDescription IS NULL THEN
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) on table %s', INITCAP(inIstr_Type), inKey_Columns, inDst_Table);
+	ELSE
+		tIstr_Brief	:= inDescription;
+	END IF;
+
+	IF inSet_Expr_If_Unique IS NOT NULL THEN
+		ADD_PLAN(inCycle_ID, inIstr_Order, GEN_CHECK_UNIQUE_KEY_SQL(inDst_Table, inDst_Filter, inKey_Columns, inSet_Expr_If_Unique, '='), inIstr_ID, tIstr_Brief);
+	END IF;
+
+    IF inSet_Expr_If_Duplicate IS NOT NULL THEN
+		ADD_PLAN(inCycle_ID, inIstr_Order, GEN_CHECK_UNIQUE_KEY_SQL(inDst_Table, inDst_Filter, inKey_Columns, inSet_Expr_If_Duplicate, '>'), inIstr_ID, tIstr_Brief);
+	END IF;
+END PLAN_CHECK_UNIQUE_KEY;
+
+
+PROCEDURE PLAN_SORT_DUP_KEY
+(
+	inCycle_ID				VARCHAR2,
+	inIstr_Order			PLS_INTEGER,
+	inIstr_ID				VARCHAR2,
+	inIstr_Type				VARCHAR2,
+	inDst_Table				VARCHAR2,
+	inDst_Filter			VARCHAR2,
+	inKey_Columns			VARCHAR2,
+	inOrder_By				VARCHAR2,
+	inRow_Number_Column		VARCHAR2,
+	inDescription			VARCHAR2
+)	IS
+	tIstr_Brief				VARCHAR2(1024);
+	tPlan_SQL				VARCHAR2(4000);
+BEGIN
+	IF inDescription IS NULL THEN
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) on table %s order by %s', INITCAP(inIstr_Type), inKey_Columns, inDst_Table, inOrder_By);
+	ELSE
+		tIstr_Brief	:= inDescription;
+	END IF;
+
+	tPlan_SQL	:= UTL_LMS.FORMAT_MESSAGE('MERGE INTO %s D
+USING
+(
+	SELECT
+		ROWID											AS ROW$ID,
+		ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s)	AS ROW$NUMBER
+	FROM $s%s
+) R
+ON (D.ROWID = R.ROW$ID)
+WHEN MATCHED THEN
+	UPDATE SET
+		D.%s = R.ROW$NUMBER', inDst_Table, inKey_Columns, inOrder_By, inDst_Table, WHERE_EXPRESSION(inDst_Filter), inRow_Number_Column);
+
+	ADD_PLAN(inCycle_ID, inIstr_Order, tPlan_SQL, inIstr_ID, tIstr_Brief);
+END PLAN_SORT_DUP_KEY;
+
+
 PROCEDURE PRECOMPILE
 (
 	inCycle_ID	VARCHAR2
@@ -370,6 +496,55 @@ BEGIN
 	LOOP
 		PLAN_MERGE(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.SRC_VIEW, L.SRC_FILTER, L.DST_TABLE, L.JOIN_COLUMNS, L.UPDATE_COLUMNS, L.INSERT_COLUMNS, L.DESCRIPTION_);
 	END LOOP;
+
+	FOR L IN
+	(
+		SELECT
+			B.CYCLE_ID,
+			B.ISTR_ORDER,
+			B.ISTR_ID,
+			B.ISTR_TYPE,
+			U.DST_TABLE,
+			U.DST_FILTER,
+			U.KEY_COLUMNS,
+			U.SET_EXPR_IF_UNIQUE,
+			U.SET_EXPR_IF_DUPLICATE,
+			B.DESCRIPTION_
+		FROM
+			VPI.WASH_ISTR_CHK_UK	U,
+			VPI.WASH_ISTR			B
+		WHERE
+				U.ISTR_ID	= B.ISTR_ID
+			AND	B.CYCLE_ID	= inCycle_ID
+	)
+	LOOP
+		PLAN_CHECK_UNIQUE_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_FILTER, L.KEY_COLUMNS, L.SET_EXPR_IF_UNIQUE, L.SET_EXPR_IF_DUPLICATE, L.DESCRIPTION_);
+	END LOOP;
+
+	FOR L IN
+	(
+		SELECT
+			B.CYCLE_ID,
+			B.ISTR_ORDER,
+			B.ISTR_ID,
+			B.ISTR_TYPE,
+			D.DST_TABLE,
+			D.DST_FILTER,
+			D.KEY_COLUMNS,
+			D.ORDER_BY,
+			D.RN_COLUMN,
+			B.DESCRIPTION_
+		FROM
+			VPI.WASH_ISTR_TOP_DK	D,
+			VPI.WASH_ISTR			B
+		WHERE
+				D.ISTR_ID	= B.ISTR_ID
+			AND	B.CYCLE_ID	= inCycle_ID
+	)
+	LOOP
+		PLAN_SORT_DUP_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_FILTER, L.KEY_COLUMNS, L.ORDER_BY, L.RN_COLUMN, L.DESCRIPTION_);
+	END LOOP;
+
 
 	COMMIT;
 END PRECOMPILE;
