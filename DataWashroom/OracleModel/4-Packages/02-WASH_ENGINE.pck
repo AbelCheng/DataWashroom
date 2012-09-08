@@ -28,7 +28,7 @@ FUNCTION CONCAT_STRING
 (
 	inConnector		VARCHAR2,
 	inAppend		VARCHAR2
-)	RETURN	VARCHAR2;
+)	RETURN			VARCHAR2;
 
 
 PROCEDURE CHECK_ISTR_TYPE
@@ -137,7 +137,7 @@ FUNCTION CONCAT_STRING
 (
 	inConnector		VARCHAR2,
 	inAppend		VARCHAR2
-)	RETURN	VARCHAR2
+)	RETURN			VARCHAR2
 IS
 BEGIN
 	IF inAppend IS NOT NULL THEN
@@ -422,6 +422,87 @@ WHEN MATCHED THEN
 END PLAN_SORT_DUP_KEY;
 
 
+PROCEDURE PLAN_MAKE_UP_MISSING_KEY
+(
+	inCycle_ID				VARCHAR2,
+	inIstr_Order			PLS_INTEGER,
+	inIstr_ID				VARCHAR2,
+	inIstr_Type				VARCHAR2,
+	inSrc_View				VARCHAR2,
+	inSrc_Filter			VARCHAR2,
+	inSrc_Key_Columns		VARCHAR2,
+	inDst_Table				VARCHAR2,
+	inDst_Key_Columns		VARCHAR2,
+	inDst_Val_Columns		VARCHAR2,
+	inSrc_Values			VARCHAR2,
+	inDescription			VARCHAR2
+)	IS
+	tIstr_Brief				VARCHAR2(1024);
+	tPlan_SQL				VARCHAR2(4000);
+BEGIN
+	IF inDescription IS NULL THEN
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('Make up missing keys (%s) on table %s in accordance with supposed foreign key (%s) of %s', inDst_Key_Columns, inDst_Table, inSrc_Key_Columns, inSrc_View);
+	ELSE
+		tIstr_Brief	:= inDescription;
+	END IF;
+
+	tPlan_SQL	:= UTL_LMS.FORMAT_MESSAGE('INSERT INTO %s (%s%s)
+SELECT DISTINCT %s%s
+FROM	%s
+WHERE	(%s)
+	NOT IN (SELECT %s FROM %s)',
+		inDst_Table, inDst_Key_Columns, CONCAT_STRING(', ', inDst_Val_Columns), inSrc_Key_Columns, CONCAT_STRING(', ', inSrc_Values),
+		inSrc_View, inSrc_Key_Columns, inDst_Key_Columns, inDst_Table);
+
+	IF inSrc_Filter IS NOT NULL THEN
+		tPlan_SQL	:= tPlan_SQL || UTL_LMS.FORMAT_MESSAGE('
+	AND (%s)', inSrc_Filter);
+	END IF;
+
+	ADD_PLAN(inCycle_ID, inIstr_Order, tPlan_SQL, inIstr_ID, tIstr_Brief);
+END PLAN_MAKE_UP_MISSING_KEY;
+
+
+PROCEDURE PLAN_MAKE_UP_NA_KEY
+(
+	inCycle_ID				VARCHAR2,
+	inIstr_Order			PLS_INTEGER,
+	inIstr_ID				VARCHAR2,
+	inIstr_Type				VARCHAR2,
+	inDst_Table				VARCHAR2,
+	inDst_Key_Columns		VARCHAR2,
+	inDst_Val_Columns		VARCHAR2,
+	inMakeup_Keys			VARCHAR2,
+	inMakeup_Values			VARCHAR2,
+	inDescription			VARCHAR2
+)	IS
+	tIstr_Brief				VARCHAR2(1024);
+	tPlan_SQL				VARCHAR2(4000);
+BEGIN
+	IF inDescription IS NULL THEN
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('Make up a N/A key (%s) into table %s (%s)', inMakeup_Keys, inDst_Table, inDst_Key_Columns);
+	ELSE
+		tIstr_Brief	:= inDescription;
+	END IF;
+
+	tPlan_SQL	:= UTL_LMS.FORMAT_MESSAGE('INSERT INTO %s (%s%s)
+SELECT	%s%s
+FROM	DUAL
+WHERE	NOT EXISTS
+(
+	SELECT	1
+	FROM	%s
+	WHERE	ROWNUM = 1
+		AND	(%s) = (SELECT %s FROM DUAL)
+)', inDst_Table, inDst_Key_Columns, CONCAT_STRING(', ', inDst_Val_Columns),
+		inMakeup_Keys, CONCAT_STRING(', ', inMakeup_Values),
+		inDst_Table,
+		inDst_Key_Columns, inMakeup_Keys);
+
+	ADD_PLAN(inCycle_ID, inIstr_Order, tPlan_SQL, inIstr_ID, tIstr_Brief);
+END PLAN_MAKE_UP_NA_KEY;
+
+
 PROCEDURE PRECOMPILE
 (
 	inCycle_ID	VARCHAR2
@@ -545,6 +626,55 @@ BEGIN
 		PLAN_SORT_DUP_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_FILTER, L.KEY_COLUMNS, L.ORDER_BY, L.RN_COLUMN, L.DESCRIPTION_);
 	END LOOP;
 
+	FOR L IN
+	(
+		SELECT
+			B.CYCLE_ID,
+			B.ISTR_ORDER,
+			B.ISTR_ID,
+			B.ISTR_TYPE,
+			M.SRC_VIEW,
+			M.SRC_FILTER,
+			M.SRC_KEY_COLUMNS,
+			M.DST_TABLE,
+			M.DST_KEY_COLUMNS,
+			M.DST_VAL_COLUMNS,
+			M.SRC_VALUES,
+			B.DESCRIPTION_
+		FROM
+			VPI.WASH_ISTR_MUP_MK	M,
+			VPI.WASH_ISTR			B
+		WHERE
+				M.ISTR_ID	= B.ISTR_ID
+			AND	B.CYCLE_ID	= inCycle_ID
+	)
+	LOOP
+		PLAN_MAKE_UP_MISSING_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.SRC_VIEW, L.SRC_FILTER, L.SRC_KEY_COLUMNS, L.DST_TABLE, L.DST_KEY_COLUMNS, L.DST_VAL_COLUMNS, L.SRC_VALUES, L.DESCRIPTION_);
+	END LOOP;
+
+	FOR L IN
+	(
+		SELECT
+			B.CYCLE_ID,
+			B.ISTR_ORDER,
+			B.ISTR_ID,
+			B.ISTR_TYPE,
+			N.DST_TABLE,
+			N.DST_KEY_COLUMNS,
+			N.DST_VAL_COLUMNS,
+			N.MAKE_UP_KEYS,
+			N.MAKE_UP_VALUES,
+			B.DESCRIPTION_
+		FROM
+			VPI.WASH_ISTR_MUP_NA	N,
+			VPI.WASH_ISTR			B
+		WHERE
+				N.ISTR_ID	= B.ISTR_ID
+			AND	B.CYCLE_ID	= inCycle_ID
+	)
+	LOOP
+		PLAN_MAKE_UP_NA_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_KEY_COLUMNS, L.DST_VAL_COLUMNS, L.MAKE_UP_KEYS, L.MAKE_UP_VALUES, L.DESCRIPTION_);
+	END LOOP;
 
 	COMMIT;
 END PRECOMPILE;
