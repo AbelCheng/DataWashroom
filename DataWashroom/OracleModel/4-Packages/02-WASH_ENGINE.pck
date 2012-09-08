@@ -194,15 +194,17 @@ PROCEDURE PLAN_DELETE
 	inCycle_ID		VARCHAR2,
 	inIstr_Order	PLS_INTEGER,
 	inIstr_ID		VARCHAR2,
-	inIstr_Type		VARCHAR2,
+
 	inDst_Table		VARCHAR2,
 	inDst_Filter	VARCHAR2,
+
+	inIstr_Type		VARCHAR2,
 	inDescription	VARCHAR2
 )	IS
 	tIstr_Brief		VARCHAR2(1024);
 BEGIN
 	IF inDescription IS NULL THEN
-		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s from %s', INITCAP(inIstr_Type), inDst_Table);
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s from %s', inIstr_Type, inDst_Table);
 	ELSE
 		tIstr_Brief	:= inDescription;
 	END IF;
@@ -218,10 +220,12 @@ PROCEDURE PLAN_COPY
 	inCycle_ID		VARCHAR2,
 	inIstr_Order	PLS_INTEGER,
 	inIstr_ID		VARCHAR2,
-	inIstr_Type		VARCHAR2,
+
 	inSrc_View		VARCHAR2,
 	inSrc_Filter	VARCHAR2,
 	inDst_Table		VARCHAR2,
+
+	inIstr_Type		VARCHAR2,
 	inDescription	VARCHAR2
 )	IS
 	tMtch_Columns	String_Array := MATCH_COLUMNS(inSrc_View, inDst_Table);
@@ -239,7 +243,7 @@ BEGIN
 
 	IF tSelect_List IS NOT NULL THEN
 		IF inDescription IS NULL THEN
-			tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s from %s to %s', INITCAP(inIstr_Type), inSrc_View, inDst_Table);
+			tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s from %s to %s', inIstr_Type, inSrc_View, inDst_Table);
 		ELSE
 			tIstr_Brief	:= inDescription;
 		END IF;
@@ -256,13 +260,15 @@ PROCEDURE PLAN_MERGE
 	inCycle_ID			VARCHAR2,
 	inIstr_Order		PLS_INTEGER,
 	inIstr_ID			VARCHAR2,
-	inIstr_Type			VARCHAR2,
+
 	inSrc_View			VARCHAR2,
 	inSrc_Filter		VARCHAR2,
 	inDst_Table			VARCHAR2,
 	inJoin_Columns		VARCHAR2,
 	inUpdate_Columns	VARCHAR2,
 	inInsert_Columns	VARCHAR2,
+
+	inIstr_Type			VARCHAR2,
 	inDescription		VARCHAR2
 )	IS
 	tMtch_Columns	String_Array	:= MATCH_COLUMNS(inSrc_View, inDst_Table);
@@ -317,7 +323,7 @@ WHEN NOT MATCHED THEN
 	END IF;
 
 	IF inDescription IS NULL THEN
-		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s %s into %s', INITCAP(inIstr_Type), inSrc_View, inDst_Table);
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s %s into %s', inIstr_Type, inSrc_View, inDst_Table);
 	ELSE
 		tIstr_Brief	:= inDescription;
 	END IF;
@@ -357,18 +363,20 @@ PROCEDURE PLAN_CHECK_UNIQUE_KEY
 	inCycle_ID				VARCHAR2,
 	inIstr_Order			PLS_INTEGER,
 	inIstr_ID				VARCHAR2,
-	inIstr_Type				VARCHAR2,
+
 	inDst_Table				VARCHAR2,
 	inDst_Filter			VARCHAR2,
 	inKey_Columns			VARCHAR2,
 	inSet_Expr_If_Unique	VARCHAR2,
 	inSet_Expr_If_Duplicate	VARCHAR2,
+
+	inIstr_Type				VARCHAR2,
 	inDescription			VARCHAR2
 )	IS
 	tIstr_Brief				VARCHAR2(1024);
 BEGIN
 	IF inDescription IS NULL THEN
-		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) on table %s', INITCAP(inIstr_Type), inKey_Columns, inDst_Table);
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) on table %s', inIstr_Type, inKey_Columns, inDst_Table);
 	ELSE
 		tIstr_Brief	:= inDescription;
 	END IF;
@@ -388,19 +396,21 @@ PROCEDURE PLAN_SORT_DUP_KEY
 	inCycle_ID				VARCHAR2,
 	inIstr_Order			PLS_INTEGER,
 	inIstr_ID				VARCHAR2,
-	inIstr_Type				VARCHAR2,
+
 	inDst_Table				VARCHAR2,
 	inDst_Filter			VARCHAR2,
 	inKey_Columns			VARCHAR2,
 	inOrder_By				VARCHAR2,
 	inRow_Number_Column		VARCHAR2,
+
+	inIstr_Type				VARCHAR2,
 	inDescription			VARCHAR2
 )	IS
 	tIstr_Brief				VARCHAR2(1024);
 	tPlan_SQL				VARCHAR2(4000);
 BEGIN
 	IF inDescription IS NULL THEN
-		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) on table %s order by %s', INITCAP(inIstr_Type), inKey_Columns, inDst_Table, inOrder_By);
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) on table %s order by %s', inIstr_Type, inKey_Columns, inDst_Table, inOrder_By);
 	ELSE
 		tIstr_Brief	:= inDescription;
 	END IF;
@@ -427,7 +437,7 @@ PROCEDURE PLAN_MAKE_UP_MISSING_KEY
 	inCycle_ID				VARCHAR2,
 	inIstr_Order			PLS_INTEGER,
 	inIstr_ID				VARCHAR2,
-	inIstr_Type				VARCHAR2,
+
 	inSrc_View				VARCHAR2,
 	inSrc_Filter			VARCHAR2,
 	inSrc_Key_Columns		VARCHAR2,
@@ -435,13 +445,15 @@ PROCEDURE PLAN_MAKE_UP_MISSING_KEY
 	inDst_Key_Columns		VARCHAR2,
 	inDst_Val_Columns		VARCHAR2,
 	inSrc_Values			VARCHAR2,
+
+	inIstr_Type				VARCHAR2,
 	inDescription			VARCHAR2
 )	IS
 	tIstr_Brief				VARCHAR2(1024);
 	tPlan_SQL				VARCHAR2(4000);
 BEGIN
 	IF inDescription IS NULL THEN
-		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('Make up missing keys (%s) on table %s in accordance with supposed foreign key (%s) of %s', inDst_Key_Columns, inDst_Table, inSrc_Key_Columns, inSrc_View);
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) on table %s in accordance with supposed foreign key (%s) of %s', inIstr_Type, inDst_Key_Columns, inDst_Table, inSrc_Key_Columns, inSrc_View);
 	ELSE
 		tIstr_Brief	:= inDescription;
 	END IF;
@@ -468,19 +480,21 @@ PROCEDURE PLAN_MAKE_UP_NA_KEY
 	inCycle_ID				VARCHAR2,
 	inIstr_Order			PLS_INTEGER,
 	inIstr_ID				VARCHAR2,
-	inIstr_Type				VARCHAR2,
+
 	inDst_Table				VARCHAR2,
 	inDst_Key_Columns		VARCHAR2,
 	inDst_Val_Columns		VARCHAR2,
 	inMakeup_Keys			VARCHAR2,
 	inMakeup_Values			VARCHAR2,
+
+	inIstr_Type				VARCHAR2,
 	inDescription			VARCHAR2
 )	IS
 	tIstr_Brief				VARCHAR2(1024);
 	tPlan_SQL				VARCHAR2(4000);
 BEGIN
 	IF inDescription IS NULL THEN
-		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('Make up a N/A key (%s) into table %s (%s)', inMakeup_Keys, inDst_Table, inDst_Key_Columns);
+		tIstr_Brief	:= UTL_LMS.FORMAT_MESSAGE('%s (%s) into table %s (%s)', inIstr_Type, inMakeup_Keys, inDst_Table, inDst_Key_Columns);
 	ELSE
 		tIstr_Brief	:= inDescription;
 	END IF;
@@ -516,19 +530,21 @@ BEGIN
 			B.CYCLE_ID,
 			B.ISTR_ORDER,
 			B.ISTR_ID,
-			B.ISTR_TYPE,
 			D.DST_TABLE,
 			D.DST_FILTER,
+			T.ISTR_BRIEF,
 			B.DESCRIPTION_
 		FROM
+			VPI.WASH_ISTR_TYPE		T,
 			VPI.WASH_ISTR_DELETE	D,
 			VPI.WASH_ISTR			B
 		WHERE
-				D.ISTR_ID	= B.ISTR_ID
+				T.ISTR_TYPE	= B.ISTR_TYPE
+			AND	D.ISTR_ID	= B.ISTR_ID
 			AND	B.CYCLE_ID	= inCycle_ID
 	)
 	LOOP
-		PLAN_DELETE(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_FILTER, L.DESCRIPTION_);
+		PLAN_DELETE(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.DST_TABLE, L.DST_FILTER, L.ISTR_BRIEF, L.DESCRIPTION_);
 	END LOOP;
 
 	FOR L IN
@@ -537,12 +553,13 @@ BEGIN
 			B.CYCLE_ID,
 			B.ISTR_ORDER,
 			B.ISTR_ID,
-			B.ISTR_TYPE,
 			C.SRC_VIEW,
 			C.SRC_FILTER,
 			C.DST_TABLE,
+			T.ISTR_BRIEF,
 			B.DESCRIPTION_
 		FROM
+			VPI.WASH_ISTR_TYPE		T,
 			VPI.WASH_ISTR_COPY		C,
 			VPI.WASH_ISTR			B
 		WHERE
@@ -550,7 +567,7 @@ BEGIN
 			AND	B.CYCLE_ID	= inCycle_ID
 	)
 	LOOP
-		PLAN_COPY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.SRC_VIEW, L.SRC_FILTER, L.DST_TABLE, L.DESCRIPTION_);
+		PLAN_COPY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.SRC_VIEW, L.SRC_FILTER, L.DST_TABLE, L.ISTR_BRIEF, L.DESCRIPTION_);
 	END LOOP;
 
 	FOR L IN
@@ -559,15 +576,16 @@ BEGIN
 			B.CYCLE_ID,
 			B.ISTR_ORDER,
 			B.ISTR_ID,
-			B.ISTR_TYPE,
 			M.SRC_VIEW,
 			M.SRC_FILTER,
 			M.DST_TABLE,
 			M.JOIN_COLUMNS,
 			M.UPDATE_COLUMNS,
 			M.INSERT_COLUMNS,
+			T.ISTR_BRIEF,
 			B.DESCRIPTION_
 		FROM
+			VPI.WASH_ISTR_TYPE		T,
 			VPI.WASH_ISTR_MERGE		M,
 			VPI.WASH_ISTR			B
 		WHERE
@@ -575,7 +593,7 @@ BEGIN
 			AND	B.CYCLE_ID	= inCycle_ID
 	)
 	LOOP
-		PLAN_MERGE(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.SRC_VIEW, L.SRC_FILTER, L.DST_TABLE, L.JOIN_COLUMNS, L.UPDATE_COLUMNS, L.INSERT_COLUMNS, L.DESCRIPTION_);
+		PLAN_MERGE(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.SRC_VIEW, L.SRC_FILTER, L.DST_TABLE, L.JOIN_COLUMNS, L.UPDATE_COLUMNS, L.INSERT_COLUMNS, L.ISTR_BRIEF, L.DESCRIPTION_);
 	END LOOP;
 
 	FOR L IN
@@ -584,14 +602,15 @@ BEGIN
 			B.CYCLE_ID,
 			B.ISTR_ORDER,
 			B.ISTR_ID,
-			B.ISTR_TYPE,
 			U.DST_TABLE,
 			U.DST_FILTER,
 			U.KEY_COLUMNS,
 			U.SET_EXPR_IF_UNIQUE,
 			U.SET_EXPR_IF_DUPLICATE,
+			T.ISTR_BRIEF,
 			B.DESCRIPTION_
 		FROM
+			VPI.WASH_ISTR_TYPE		T,
 			VPI.WASH_ISTR_CHK_UK	U,
 			VPI.WASH_ISTR			B
 		WHERE
@@ -599,7 +618,7 @@ BEGIN
 			AND	B.CYCLE_ID	= inCycle_ID
 	)
 	LOOP
-		PLAN_CHECK_UNIQUE_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_FILTER, L.KEY_COLUMNS, L.SET_EXPR_IF_UNIQUE, L.SET_EXPR_IF_DUPLICATE, L.DESCRIPTION_);
+		PLAN_CHECK_UNIQUE_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.DST_TABLE, L.DST_FILTER, L.KEY_COLUMNS, L.SET_EXPR_IF_UNIQUE, L.SET_EXPR_IF_DUPLICATE, L.ISTR_BRIEF, L.DESCRIPTION_);
 	END LOOP;
 
 	FOR L IN
@@ -608,22 +627,23 @@ BEGIN
 			B.CYCLE_ID,
 			B.ISTR_ORDER,
 			B.ISTR_ID,
-			B.ISTR_TYPE,
 			D.DST_TABLE,
 			D.DST_FILTER,
 			D.KEY_COLUMNS,
 			D.ORDER_BY,
 			D.RN_COLUMN,
+			T.ISTR_BRIEF,
 			B.DESCRIPTION_
 		FROM
-			VPI.WASH_ISTR_TOP_DK	D,
+			VPI.WASH_ISTR_TYPE		T,
+			VPI.WASH_ISTR_RNK_DK	D,
 			VPI.WASH_ISTR			B
 		WHERE
 				D.ISTR_ID	= B.ISTR_ID
 			AND	B.CYCLE_ID	= inCycle_ID
 	)
 	LOOP
-		PLAN_SORT_DUP_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_FILTER, L.KEY_COLUMNS, L.ORDER_BY, L.RN_COLUMN, L.DESCRIPTION_);
+		PLAN_SORT_DUP_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.DST_TABLE, L.DST_FILTER, L.KEY_COLUMNS, L.ORDER_BY, L.RN_COLUMN, L.ISTR_BRIEF, L.DESCRIPTION_);
 	END LOOP;
 
 	FOR L IN
@@ -632,7 +652,6 @@ BEGIN
 			B.CYCLE_ID,
 			B.ISTR_ORDER,
 			B.ISTR_ID,
-			B.ISTR_TYPE,
 			M.SRC_VIEW,
 			M.SRC_FILTER,
 			M.SRC_KEY_COLUMNS,
@@ -640,8 +659,10 @@ BEGIN
 			M.DST_KEY_COLUMNS,
 			M.DST_VAL_COLUMNS,
 			M.SRC_VALUES,
+			T.ISTR_BRIEF,
 			B.DESCRIPTION_
 		FROM
+			VPI.WASH_ISTR_TYPE		T,
 			VPI.WASH_ISTR_MUP_MK	M,
 			VPI.WASH_ISTR			B
 		WHERE
@@ -649,7 +670,7 @@ BEGIN
 			AND	B.CYCLE_ID	= inCycle_ID
 	)
 	LOOP
-		PLAN_MAKE_UP_MISSING_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.SRC_VIEW, L.SRC_FILTER, L.SRC_KEY_COLUMNS, L.DST_TABLE, L.DST_KEY_COLUMNS, L.DST_VAL_COLUMNS, L.SRC_VALUES, L.DESCRIPTION_);
+		PLAN_MAKE_UP_MISSING_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.SRC_VIEW, L.SRC_FILTER, L.SRC_KEY_COLUMNS, L.DST_TABLE, L.DST_KEY_COLUMNS, L.DST_VAL_COLUMNS, L.SRC_VALUES, L.ISTR_BRIEF, L.DESCRIPTION_);
 	END LOOP;
 
 	FOR L IN
@@ -658,14 +679,15 @@ BEGIN
 			B.CYCLE_ID,
 			B.ISTR_ORDER,
 			B.ISTR_ID,
-			B.ISTR_TYPE,
 			N.DST_TABLE,
 			N.DST_KEY_COLUMNS,
 			N.DST_VAL_COLUMNS,
 			N.MAKE_UP_KEYS,
 			N.MAKE_UP_VALUES,
+			T.ISTR_BRIEF,
 			B.DESCRIPTION_
 		FROM
+			VPI.WASH_ISTR_TYPE		T,
 			VPI.WASH_ISTR_MUP_NA	N,
 			VPI.WASH_ISTR			B
 		WHERE
@@ -673,7 +695,7 @@ BEGIN
 			AND	B.CYCLE_ID	= inCycle_ID
 	)
 	LOOP
-		PLAN_MAKE_UP_NA_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.ISTR_TYPE, L.DST_TABLE, L.DST_KEY_COLUMNS, L.DST_VAL_COLUMNS, L.MAKE_UP_KEYS, L.MAKE_UP_VALUES, L.DESCRIPTION_);
+		PLAN_MAKE_UP_NA_KEY(L.CYCLE_ID, L.ISTR_ORDER, L.ISTR_ID, L.DST_TABLE, L.DST_KEY_COLUMNS, L.DST_VAL_COLUMNS, L.MAKE_UP_KEYS, L.MAKE_UP_VALUES, L.ISTR_BRIEF, L.DESCRIPTION_);
 	END LOOP;
 
 	COMMIT;

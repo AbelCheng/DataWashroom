@@ -25,34 +25,37 @@
     <Content Include="1-Tables\03-WASH_CYCLE.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\08-WASH_ISTR_CHK_UK.sql">
+    <Content Include="1-Tables\04-WASH_ISTR_TYPE.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\09-WASH_ISTR_TOP_DK.sql">
+    <Content Include="1-Tables\09-WASH_ISTR_CHK_UK.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\10-WASH_ISTR_MUP_MK.sql">
+    <Content Include="1-Tables\10-WASH_ISTR_RNK_DK.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\11-WASH_ISTR_MUP_NA.sql">
+    <Content Include="1-Tables\11-WASH_ISTR_MUP_MK.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\13-WASH_VERSION.sql">
+    <Content Include="1-Tables\12-WASH_ISTR_MUP_NA.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\12-WASH_DML_PLAN.sql">
+    <Content Include="1-Tables\14-WASH_VERSION.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\04-WASH_ISTR.sql">
+    <Content Include="1-Tables\13-WASH_DML_PLAN.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\06-WASH_ISTR_COPY.sql">
+    <Content Include="1-Tables\05-WASH_ISTR.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\07-WASH_ISTR_MERGE.sql">
+    <Content Include="1-Tables\07-WASH_ISTR_COPY.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\05-WASH_ISTR_DELETE.sql">
+    <Content Include="1-Tables\08-WASH_ISTR_MERGE.sql">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="1-Tables\06-WASH_ISTR_DELETE.sql">
       <SubType>Content</SubType>
     </Content>
     <Content Include="1-Tables\01-PROGRESS_STATUS.sql">
@@ -61,7 +64,7 @@
     <Content Include="1-Tables\02-PROGRESS_LOG.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="1-Tables\14-WASH_PROGRESS.sql">
+    <Content Include="1-Tables\15-WASH_PROGRESS.sql">
       <SubType>Content</SubType>
     </Content>
     <Content Include="2-Views\01-VIEW_WASH_ISTR_DOCUMENT.sql">
@@ -103,6 +106,9 @@
     <Content Include="5-Triggers\05-TRG_WASH_ISTR_MERGE.trg">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="6-InitData\01-WASH_ISTR_TYPE.sql">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="ModelDefinition\OracleModel.uml">
       <SubType>Content</SubType>
     </Content>
@@ -111,5 +117,6 @@
     <Folder Include="4-Packages" />
     <Folder Include="5-Triggers" />
     <Folder Include="3-Sequences" />
+    <Folder Include="6-InitData" />
   </ItemGroup>
 </Project>
