@@ -106,6 +106,18 @@
     <Content Include="5-Triggers\05-TRG_WASH_ISTR_MERGE.trg">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="5-Triggers\06-TRG_WASH_ISTR_CHK_UK.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\07-TRG_WASH_ISTR_RNK_DK.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\08-TRG_WASH_ISTR_MUP_MK.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\09-TRG_WASH_ISTR_MUP_NA.trg">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="6-InitData\01-WASH_ISTR_TYPE.sql">
       <SubType>Content</SubType>
     </Content>
