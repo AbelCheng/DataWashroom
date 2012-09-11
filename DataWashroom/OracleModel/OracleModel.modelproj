@@ -88,7 +88,10 @@
     <Content Include="4-Packages\03-VIEW_WASH_CYCLE_CODE.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\04-WASH_DEPLOY.pck">
+    <Content Include="4-Packages\04-DEPLOY_UTILITY.pck">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\05-WASH_DEPLOY.pck">
       <SubType>Content</SubType>
     </Content>
     <Content Include="5-Triggers\01-TRG_WASH_CYCLE.trg">
