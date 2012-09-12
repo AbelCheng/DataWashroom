@@ -421,11 +421,11 @@ BEGIN
 	END IF;
 
 	IF inSet_Expr_If_Unique IS NOT NULL THEN
-		ADD_PLAN(inCycle_ID, inIstr_Order, GEN_CHECK_UNIQUE_KEY_SQL(inDst_Table, inDst_Filter, inKey_Columns, inSet_Expr_If_Unique, '='), inIstr_ID, tIstr_Brief);
+		ADD_PLAN(inCycle_ID, inIstr_Order, GEN_CHECK_UNIQUE_KEY_SQL(inDst_Table, inDst_Filter, inKey_Columns, inSet_Expr_If_Unique, '='), inIstr_ID, tIstr_Brief || ' -- Mark for Unique');
 	END IF;
 
     IF inSet_Expr_If_Duplicate IS NOT NULL THEN
-		ADD_PLAN(inCycle_ID, inIstr_Order, GEN_CHECK_UNIQUE_KEY_SQL(inDst_Table, inDst_Filter, inKey_Columns, inSet_Expr_If_Duplicate, '>'), inIstr_ID, tIstr_Brief);
+		ADD_PLAN(inCycle_ID, inIstr_Order, GEN_CHECK_UNIQUE_KEY_SQL(inDst_Table, inDst_Filter, inKey_Columns, inSet_Expr_If_Duplicate, '>'), inIstr_ID, tIstr_Brief || ' -- Mark for Duplicate');
 	END IF;
 END PLAN_CHECK_UNIQUE_KEY;
 
@@ -460,7 +460,7 @@ USING
 	SELECT
 		ROWID											AS ROW$ID,
 		ROW_NUMBER() OVER (PARTITION BY %s ORDER BY %s)	AS ROW$NUMBER
-	FROM $s%s
+	FROM %s%s
 ) R
 ON (D.ROWID = R.ROW$ID)
 WHEN MATCHED THEN
