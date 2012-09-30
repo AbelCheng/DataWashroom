@@ -1,0 +1,354 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head>
+    <title>DataWashroom - Database Clean up Engine</title>
+</head>
+<body>
+<p><strong>Project Description</strong><br />Without washrooms today, imagine what would human society be like? In the era of the proliferation of information, data is also need to be localized excreta, control defecation.<br />The DataWashroom provides a filter core of the data-purification system, includes the common functions of data isolation and waste separation by a simplicity instruction set (7 instructions). The instruction engine handles pre-compiling, building, publishing (deploying), version control and documentation-generation. (It&rsquo;s compiling, not interpreting) The input of the compiler is some metadata in wash-instruction tables, the output is a stored procedure.</p>
+<p>For more intentions about this project, please see also the [Data Quality] section on the related project <a title="View-Plug-In" href="http://view.codeplex.com" target="_blank">http://view.codeplex.com</a> wiki page.</p>
+<p><strong>Instruction Set</strong><br />There are 7 build-in wash instructions shown as following:<br /><br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=485698" alt="Instruction Set" width="701" height="291" /></p>
+<ul>
+<li>The basic manipulation instructions mainly perform data isolation from source systems; </li>
+<li>The relationship clean-up instructions perform the waste separation. </li>
+</ul>
+<p>Clean-up is not just about deleting those no longer needed historical data or garbage data. The clean-up here emphasizes particularly on treatment for bad data. In order to simplify the generalized common solution from untold symptomatic treatments for bad data, the design thinking of above build-in wash instructions is based on following conventions:</p>
+<ul>
+<li>Face duplicate keys, none of them should be deleted physically. Instead, additional tags will be taken part in the discriminator to uniquely identify a business key. For example,<br /><br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=486589" alt="Duplicate key discriminator" width="613" height="112" /> </li>
+</ul>
+<p style="padding-left: 30px;">The duplicate key treatment is subdivided into two alternative methods:<br />&nbsp;- <span style="text-decoration: underline;">Check Unique Key </span>(<span style="color: #0000ff;">CHK_UK</span>)<br />&nbsp;&nbsp; Only adopt qualified rows, exclude all duplicate rows.<br />&nbsp;- <span style="text-decoration: underline;">Sort Duplicate Key</span> (<span style="color: #0000ff;">RNK_DK</span>)<br />&nbsp;&nbsp; Assign a sequential number of every row within each partition of supposed unique key by a specified ordering rule. So that the first (top 1) row of each supposed unique key can be <span>picked</span> <span>out directly.</span></p>
+<ul>
+<li>Face missing keys, all of supposed foreign keys should be made up in the primary table or bridge table if they were missing before, to avoid missing relationship. So that all <span>subsequent users can consume the data straightforwardly and much more efficiently. For example,<br /><br /></span><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=490741" alt="Make up missing keys" /> </li>
+</ul>
+<p><strong>Wash Cycle</strong><br />All 7 wash-instructions inherit from the base WASH_ISTR. They are organized under the wash cycle in sequence.</p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=487105" alt="Washing Cycle Diagram" width="643" height="867" /></p>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center"><strong>WASH_CYCLE</strong></td>
+</tr>
+<tr>
+<td colspan="2">A wash cycle is a sequential workflow of wash instructions.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">CYCLE_ID</span>:</td>
+<td>The unique mnemonic identifier for a wash cycle, consider a naming convention within the enterprise (like a short namespace).</td>
+</tr>
+<tr>
+<td valign="top">PROCEDURE_NAME:</td>
+<td>Define the stored procedure name of the wash cycle to be generated, just as the executable file name to an application. The schema name must be included in the stored procedure name (e.g. <span style="color: #008000; background-color: #ffefbb;">ABC.PRETREATMENT</span>).</td>
+</tr>
+<tr>
+<td valign="top">DESCRIPTION_:</td>
+<td>Arbitrary introduction of the wash cycle, it can be brief like an application name.</td>
+</tr>
+<tr>
+<td valign="top">OWNER_:</td>
+<td>The owner of the wash cycle.</td>
+</tr>
+<tr>
+<td valign="top">LATEST_VERSION:</td>
+<td>This is a free maintenance column with initialization <span style="color: #008000; background-color: #ffefbb;">0</span>. It's used inside version control.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Wash Instructions</strong></p>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center"><strong>WASH_ISTR</strong></td>
+</tr>
+<tr>
+<td colspan="2">This is the base table of all 7 wash-instruction tables. Each row of this table is a wash instruction declaration. For a top-down design, this table can also be used for storing requirement or outline design with every wash step of a wash cycle. For the compiler, this base table is treated like a header file to C++.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>Defines the unique mnemonic identifier for a wash instruction, consider a naming convention within the enterprise.</td>
+</tr>
+<tr>
+<td valign="top">CYCLE_ID:</td>
+<td>Which wash cycle does the wash instruction belong to.</td>
+</tr>
+<tr>
+<td valign="top">ISTR_TYPE:</td>
+<td>The type of instruction can be one of: <span style="color: #008080;">DELETE, COPY, MERGE, CHK_UK, RNK_DK, MUP_MK, MUP_NA</span>. It indicates the definition of the instruction is located in which derived instruction table.</td>
+</tr>
+<tr>
+<td valign="top">ISTR_ORDER:</td>
+<td>The step ordinal of the instruction within its wash cycle.</td>
+</tr>
+<tr>
+<td valign="top">DESCRIPTION_:</td>
+<td>The brief introduction of what is this step going to do. This is an optional info, but it can be useful for generating the progress status for every step and documentation-generation.</td>
+</tr>
+</tbody>
+</table>
+<p>7 derived wash instruction tables:</p>
+<ul>
+<li>The main practices of following 3 instructions of basic manipulation is to refresh data from source systems to the isolation system, the refresh may include some basic corrections, tagging, null-reference transformation, etc. those rules base on the columns of the the same row or constants, and pivot transformation ... by the view on source data. </li>
+</ul>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>DELETE</strong></td>
+</tr>
+<tr>
+<td colspan="2">Removes rows from a table. For instance, to refresh data from source system, a DELETE step could need to be operated before COPY.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the table from which the rows are to be deleted. Schema name is always required in the table name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.WORK_TABLE</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_FILTER:</td>
+<td>Specifies the conditions used to limit the number of rows that are deleted (E.g. <span style="color: #008000; background-color: #ffefbb;">ID_TYPE = 'ISIN'</span>). If this column is NULL, DELETE removes all the rows from the table.</td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>COPY</strong></td>
+</tr>
+<tr>
+<td colspan="2">Copies all matching columns (by column name) of data from a source table or view to a destination table.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VIEW:</td>
+<td>Specifies the source table or view to be copied from. Schema name is always required in the table or view name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.VIEW_SRC</span>)</td>
+</tr>
+<tr>
+<td valign="top">SRC_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be copied (E.g. <span style="color: #008000; background-color: #ffefbb;">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the source will be copied.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the destination table from which the rows are to be copied to. Schema name is always required in the table name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.TABLE_DST</span>)</td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>MERGE</strong></td>
+</tr>
+<tr>
+<td colspan="2">Merges specified matching columns (by column name) of data from a source table or view to a target table - Updating specified columns in a target table if a matching row exists, or inserting the data as a new row if a matching row does not exist.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VIEW:</td>
+<td>Specifies the source table or view to be merged from. Schema name is always required in the table or view name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.VIEW_SRC</span>)</td>
+</tr>
+<tr>
+<td valign="top">SRC_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be merged (E.g. <span style="color: #008000; background-color: #ffefbb;">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the source will be consumed as the source data.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the destination table to which the rows are to be copied. Schema name is always required in the table name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">JOIN_COLUMNS:</td>
+<td>Specifies the list of columns on which source table/view is joined with the target table to determine where they match. Multiple columns must be delimited by commas. (E.g. <span style="color: #008000; background-color: #ffefbb;">POS_ID, GRP_ID, DATE_</span>) The column names must exist in both source table/view and destination table.</td>
+</tr>
+<tr>
+<td valign="top">UPDATE_COLUMNS:</td>
+<td>Specifies a comma-separated list of columns to be updated in the destination table by matching rows from the source table/view (matched by JOIN_COLUMNS). A column that is referenced in JOIN_COLUMNS list can <span style="color: #ff0000;">not</span> be included in the UPDATE_COLUMNS list.</td>
+</tr>
+<tr>
+<td valign="top">INSERT_COLUMNS:</td>
+<td>Specifies a comma-separated list of columns which will be copied from the source table/view to the destination table when matching rows did not exist. A column in JOIN_COLUMNS list can also be included in the INSERT_COLUMNS list.</td>
+</tr>
+<tr>
+<td colspan="2"><em>UPDATE_COLUMNS and INSERT_COLUMNS are optional, but at least one of them must be specified, they can be specified both.</em></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Following 2 instructions of duplicate keys treatment are aimed mostly at the situation of source system does not define proper primary keys or unique constraints, some biased designs don't even allow business key constraints to sit in the table. </li>
+</ul>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>CHK_UK</strong></td>
+</tr>
+<tr>
+<td colspan="2">Check Unique Key &ndash; Checks the uniqueness by a supposed business key, and tags it something if a row is unique or tags it something if a row is duplicate.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the target table to be checked. Schema name is always required in the table name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be checked (E.g. <span style="color: #008000; background-color: #ffefbb;">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the table will be checked.</td>
+</tr>
+<tr>
+<td valign="top">KEY_COLUMNS:</td>
+<td>Specifies a column or a list of columns which is supposed to be a unique key. A composite key (includes two or more columns) must be delimited by commas (E.g. <span style="color: #008000; background-color: #ffefbb;">DATE_, POS_ID</span>).</td>
+</tr>
+<tr>
+<td valign="top">SET_EXPR_IF_UNIQUE:</td>
+<td>Specifies a comma-separated list of clause(s) {column_name = expression}[ ,...n ] for tagging a row if its supposed key is unique. For example: <span style="color: #008000; background-color: #ffefbb;">IS_QUALIFIED = 'Y', REDIRECT_CODE = ORIG_CODE</span>.</td>
+</tr>
+<tr>
+<td valign="top">SET_EXPR_IF_DUPLICATE:</td>
+<td>Specifies a comma-separated list of clause(s) {column_name = expression}[ ,...n ] for tagging a row if its supposed key is duplicate. For example: <span style="color: #008000; background-color: #ffefbb;">IS_QUALIFIED = 'N', REDIRECT_CODE = 'N/A'</span>.</td>
+</tr>
+<tr>
+<td colspan="2"><em>At least one of SET_EXPR_IF_UNIQUE or/and SET_EXPR_IF_DUPLICATE must be specified, normally they should be specified both.</em></td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>RNK_DK</strong></td>
+</tr>
+<tr>
+<td colspan="2">Rank Duplicate Key &ndash; Checks the uniqueness by a supposed business key, ranks every row within their partition of the supposed key, and assigns a sequential number of every row, starting at 1 for the first row in each partition.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the target table to be checked. Schema name is always required in the table name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be checked (E.g. <span style="color: #008000; background-color: #ffefbb;">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the table will be checked.</td>
+</tr>
+<tr>
+<td valign="top">KEY_COLUMNS:</td>
+<td>Specifies a column or a list of columns which is supposed to be a unique key. A composite key (includes two or more columns) must be delimited by commas (E.g. <span style="color: #008000; background-color: #ffefbb;">DATE_, POS_ID</span>).</td>
+</tr>
+<tr>
+<td valign="top">ORDER_BY:</td>
+<td>The ORDER_BY clause determines the sequence in which the rows are assigned their unique ROW_NUMBER within a specified partition (E.g. <span style="color: #008000; background-color: #ffefbb;">TRAN_NO DESC, PRICE</span>). It is required.</td>
+</tr>
+<tr>
+<td valign="top">RN_COLUMN:</td>
+<td>Specifies the column for filling the ROW_NUMBER. It is required, the column type must be NUMBER or compatible types.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>The direct purpose of following 2 instructions of missing keys treatment is to avoid using LEFT/RIGHT OUTER JOIN in most cases. (A common cause of this situation could be the source table does not define properly foreign key constraint, non-null constraint, etc.) </li>
+</ul>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>MUP_MK</strong></td>
+</tr>
+<tr>
+<td colspan="2">Make up Missing Keys &ndash; the compensation inserts unique rows contained by the source table/view (select distinct supposed foreign key and coping values) but missing in the target table (by supposed primary key) originally.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VIEW:</td>
+<td>The source table/view which references the universal set of supposed foreign key. Schema name is always required in the table or view name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.VIEW_SRC</span>)</td>
+</tr>
+<tr>
+<td valign="top">SRC_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be matched (E.g. <span style="color: #008000; background-color: #ffefbb;">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the source table/view will be taken as the universal set.</td>
+</tr>
+<tr>
+<td valign="top">SRC_KEY_COLUMNS:</td>
+<td>Specifies a column or a comma-separated list of columns which is supposed to be a foreign key and will be used to join with DST_KEY_COLUMNS (supposed primary key of target table).</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>The target table to be checked and to be made up. Schema name is always required in the table name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_KEY_COLUMNS:</td>
+<td>Specifies a column or a comma-separated list of columns which is supposed to be a primary key of target table and can be used to join with SRC_KEY_COLUMNS of SRC_VIEW.</td>
+</tr>
+<tr>
+<td valign="top">DST_VAL_COLUMNS:</td>
+<td><span style="color: #808080;">(Optional)</span> When insert a new compensating row into the target table, some non-key columns may need to be assigned as a special value (such as <span style="color: #008080;">&lsquo;Dummy&rsquo;, &lsquo;Unknown&rsquo;, &lsquo;N/A&rsquo;, -1, &lsquo;1900-01-01&rsquo;&hellip;</span>). DST_VAL_COLUMNS specifies a column or a comma-separated list of columns (E.g. <span style="color: #008000; background-color: #ffefbb;">GRP_ID, ROW_SRC</span>) to be assigned. A column that is listed in DST_KEY_COLUMNS can not be included in the DST_VAL_COLUMNS.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VALUES:</td>
+<td><span style="color: #808080;">(Optional)</span> If DST_VAL_COLUMNS is specified, and then SRC_VALUES is required. SRC_VALUES specifies a value expression or a comma-separated list of value expressions which will be loaded into DST_VAL_COLUMNS while making up. An expression can be a constant (E.g. <span style="color: #008000; background-color: #ffefbb;">-1, 'Made-up'</span>) or an expression references on SRC_VIEW (E.g. <span style="color: #008000; background-color: #ffefbb;">-1, LAST_UPD</span>). It's natural that only unique rows (by key columns) will be inserted into the target table if all expressions only contain constants. Otherwise, the SRC_VIEW is responsible for ensuring the uniqueness of result set if an expression references on a column(s) of SRC_VIEW.</td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>MUP_NA</strong></td>
+</tr>
+<tr>
+<td colspan="2">Make up a N/A key &ndash; insert a special primary key into the target table as a reserved row for substituting N/A cases (such as null-references, exception replacement &hellip;) if it did not exist before.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color: #0000ff;">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>The target table to be made up. Schema name is always required in the table name. (E.g. <span style="color: #008000; background-color: #ffefbb;">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_KEY_COLUMNS:</td>
+<td>Specifies a column or a comma-separated list of columns which is the primary key of the target table. (E.g. <span style="color: #008000; background-color: #ffefbb;">REF_ID</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_VAL_COLUMNS:</td>
+<td><span style="color: #808080;">(Optional)</span> When insert a reserved row into the target table, some non-key columns may need to be assigned as special attributes (such as <span style="color: #008080;">&lsquo;Dummy&rsquo;, &lsquo;Unknown&rsquo;, &lsquo;N/A&rsquo;, -1, &lsquo;1900-01-01&rsquo;&hellip;</span>). DST_VAL_COLUMNS specifies a column or a comma-separated list of columns (E.g. <span style="color: #008000; background-color: #ffefbb;">GRP_ID, ROW_SRC</span>) to be assigned. A column that is listed in DST_KEY_COLUMNS can not be included in the DST_VAL_COLUMNS.</td>
+</tr>
+<tr>
+<td valign="top">MAKE_UP_KEYS:</td>
+<td>Introduces a constant or a comma-separated list of constants of primary key columns to be inserted if it did not exist (E.g. <span style="color: #008000; background-color: #ffefbb;">-1</span>). There must be one data value for each column of DST_KEY_COLUMNS list in the same order. If the same key already exists, nothing will be updated on that row.</td>
+</tr>
+<tr>
+<td valign="top">MAKE_UP_VALUES:</td>
+<td><span style="color: #808080;">(Optional)</span> If DST_VAL_COLUMNS is specified, and then MAKE_UP_VALUES is required. MAKE_UP_VALUES introduces a constant or a comma-separated list of constants which will be assigned to columns of DST_VAL_COLUMNS. The values in the MAKE_UP_VALUES must be in the same order as the columns in DST_VAL_COLUMNS list. (E.g. <span style="color: #008000; background-color: #ffefbb;">-1, 'N/A'</span>)</td>
+</tr>
+</tbody>
+</table>
+<p>Above is all metadata may need to be filled in instructions tables. The triggers behind these tables will check the validity of input metadata.</p>
+<p><strong>Build and Deploy</strong></p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=498670" alt="Build and Deploy" /></p>
+<p>The package <span style="color: #808080;">VPI.</span>WASH_DEPLOY (Oracle version) provides some utilities for building and deploying a wash cycle.</p>
+<ul>
+<li><span style="color: blue;">BUILD_AND_PUBLISH_PROCEDURE</span> </li>
+</ul>
+<div style="color: black; background-color: white;">
+<pre><span style="color: blue;">FUNCTION</span> BUILD_AND_PUBLISH_PROCEDURE
+(
+    inCycle_ID      VARCHAR2,       <span style="color: green;">-- The Wash Cycle to be built and deployed.</span>
+    inVer_Comment   VARCHAR2 := <span style="color: #a31515;">''</span>, <span style="color: green;">-- Comment for this version</span>
+    inGen_Progress  VARCHAR2 := <span style="color: #a31515;">'Y'</span>,<span style="color: green;">-- 'Y': to generate progress status for every step; 'N': does not generate the code for progress status.</span>
+    inStep_Commit   VARCHAR2 := <span style="color: #a31515;">'N'</span> <span style="color: green;">-- 'Y': Commit every step; 'N': Commit once at the end of whole wash cycle. </span>
+)   <span style="color: blue;">RETURN</span>          PLS_INTEGER;    <span style="color: green;">-- Return the new version of this publish. (every time of publish will generate a new version number)</span>
+</pre>
+</div>
+<p>&nbsp;</p>
+</body>
+</html>

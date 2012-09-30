@@ -6,6 +6,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{0DF417A1-00F8-4A3B-9AC4-814C7E536841}"
 	ProjectSection(SolutionItems) = preProject
 		License.txt = License.txt
+		Documents\wikipage_home.htm = Documents\wikipage_home.htm
 	EndProjectSection
 EndProject
 Global
