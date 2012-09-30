@@ -334,21 +334,54 @@
 </table>
 <p>Above is all metadata may need to be filled in instructions tables. The triggers behind these tables will check the validity of input metadata.</p>
 <p><strong>Build and Deploy</strong></p>
-<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=498670" alt="Build and Deploy" /></p>
-<p>The package <span style="color: #808080;">VPI.</span>WASH_DEPLOY (Oracle version) provides some utilities for building and deploying a wash cycle.</p>
 <ul>
-<li><span style="color: blue;">BUILD_AND_PUBLISH_PROCEDURE</span> </li>
+<li>Development Phase</li>
 </ul>
-<div style="color: black; background-color: white;">
-<pre><span style="color: blue;">FUNCTION</span> BUILD_AND_PUBLISH_PROCEDURE
-(
-    inCycle_ID      VARCHAR2,       <span style="color: green;">-- The Wash Cycle to be built and deployed.</span>
-    inVer_Comment   VARCHAR2 := <span style="color: #a31515;">''</span>, <span style="color: green;">-- Comment for this version</span>
-    inGen_Progress  VARCHAR2 := <span style="color: #a31515;">'Y'</span>,<span style="color: green;">-- 'Y': to generate progress status for every step; 'N': does not generate the code for progress status.</span>
-    inStep_Commit   VARCHAR2 := <span style="color: #a31515;">'N'</span> <span style="color: green;">-- 'Y': Commit every step; 'N': Commit once at the end of whole wash cycle. </span>
-)   <span style="color: blue;">RETURN</span>          PLS_INTEGER;    <span style="color: green;">-- Return the new version of this publish. (every time of publish will generate a new version number)</span>
-</pre>
-</div>
+<table style="margin-left: 40px; margin-right: 0px;" border="0" cellspacing="0" cellpadding="4">
+<tbody>
+<tr>
+<td colspan="3"><span style="color: #808080;">WASH_DEPLOY.</span><span style="color: blue;">BUILD_AND_PUBLISH</span></td>
+</tr>
+<tr>
+<td colspan="3">The combination utility for building and publishing a Wash Cycle.</td>
+</tr>
+<tr style="background-color: #e0e0e0; color: #808080; font-style: italic;">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inCycle_ID</td>
+<td valign="top">&nbsp;</td>
+<td>The Wash Cycle to be built and deployed.</td>
+</tr>
+<tr>
+<td valign="top">inVer_Comment</td>
+<td align="center" valign="top">''</td>
+<td>Comment for this version</td>
+</tr>
+<tr>
+<td valign="middle">inGen_Progress</td>
+<td align="center" valign="top">'Y'</td>
+<td>'Y': to generate progress status for every step;<br />'N': does not generate the code for progress status.</td>
+</tr>
+<tr>
+<td valign="middle">inStep_Commit</td>
+<td align="center" valign="bottom">'N'</td>
+<td>'Y': Commit every step (consider mass data);<br />'N': Commit once only at the end of whole wash cycle.</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom">Return Value:</td>
+<td>A new version number of this publish. (every time of publish will generate a new version)</td>
+</tr>
+</tbody>
+</table>
+<p style="padding-left: 30px;">In many instances, developer may need to use individual steps for trial/debug convenience. Following diagram shows internal procedures of the whole build and deployment management.<br /><span style="color: #808080;">(Labels in gray indicate the corresponding name of table, view, stored procedure or function)</span></p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=498670" alt="Build and Deploy" /></p>
+<p>&nbsp;</p>
+<ul>
+<li>Deployment Phase</li>
+</ul>
 <p>&nbsp;</p>
 </body>
 </html>
