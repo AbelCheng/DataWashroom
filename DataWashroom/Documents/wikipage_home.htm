@@ -2,6 +2,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head>
     <title>DataWashroom - Database Clean up Engine</title>
+
+	<style type="text/css">
+		.style1
+		{
+			height: 56px;
+		}
+	</style>
+
 </head>
 <body>
 <p><strong>Project Description</strong><br />Without washrooms today, imagine what would human society be like? In the era of the proliferation of information, data is also need to be localized excreta, control defecation.<br />The DataWashroom provides a filter core of the data-purification system, includes the common functions of data isolation and waste separation by a simplicity instruction set (7 instructions). The instruction engine handles pre-compiling, building, publishing (deploying), version control and documentation-generation. (It&rsquo;s compiling, not interpreting) The input of the compiler is some metadata in wash-instruction tables, the output is a stored procedure.</p>
@@ -335,7 +343,7 @@
 <p>Above is all metadata may need to be filled in instructions tables. The triggers behind these tables will check the validity of input metadata.</p>
 <p><strong>Build and Deploy</strong></p>
 <ul>
-<li>Development Phase</li>
+<li>Development Phase </li>
 </ul>
 <table style="margin-left: 40px; margin-right: 0px;" border="0" cellspacing="0" cellpadding="4">
 <tbody>
@@ -343,7 +351,7 @@
 <td colspan="3"><span style="color: #808080;">WASH_DEPLOY.</span><span style="color: blue;">BUILD_AND_PUBLISH</span></td>
 </tr>
 <tr>
-<td colspan="3">The combination utility for building and publishing a Wash Cycle.</td>
+<td colspan="3">The combination function for building and publishing a Wash Cycle.</td>
 </tr>
 <tr style="background-color: #e0e0e0; color: #808080; font-style: italic;">
 <td valign="top">Parameters</td>
@@ -358,30 +366,109 @@
 <tr>
 <td valign="top">inVer_Comment</td>
 <td align="center" valign="top">''</td>
-<td>Comment for this version</td>
+<td>Comment for this version.</td>
 </tr>
 <tr>
 <td valign="middle">inGen_Progress</td>
 <td align="center" valign="top">'Y'</td>
-<td>'Y': to generate progress status for every step;<br />'N': does not generate the code for progress status.</td>
+<td>'Y': To generate progress status for every step;<br />'N': Does not generate the code for progress status.</td>
 </tr>
 <tr>
 <td valign="middle">inStep_Commit</td>
 <td align="center" valign="bottom">'N'</td>
-<td>'Y': Commit every step (consider mass data);<br />'N': Commit once only at the end of whole wash cycle.</td>
+<td>'Y': Commit every step (consider of mass data);<br />'N': Commit once only at the end of whole wash cycle.</td>
 </tr>
 <tr>
 <td colspan="2" align="center" valign="bottom">Return Value:</td>
 <td>A new version number of this publish. (every time of publish will generate a new version)</td>
 </tr>
+<tr>
+<td colspan="2" align="center" valign="bottom"><em>Output:</em></td>
+<td>Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table WASH_VERSION (with deployment status or error messages).</td>
+</tr>
 </tbody>
 </table>
 <p style="padding-left: 30px;">In many instances, developer may need to use individual steps for trial/debug convenience. Following diagram shows internal procedures of the whole build and deployment management.<br /><span style="color: #808080;">(Labels in gray indicate the corresponding name of table, view, stored procedure or function)</span></p>
 <p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=498670" alt="Build and Deploy" /></p>
-<p>&nbsp;</p>
+<table style="margin-left: 40px; margin-right: 0px;" border="0" cellspacing="0" cellpadding="4">
+<tbody>
+<tr>
+<td colspan="3"><span style="color: #808080;">WASH_ENGINE.</span><span style="color: blue;">PRECOMPILE</span></td>
+</tr>
+<tr>
+<td colspan="3">The procedure precompiles every step of wash-instructions under a wash cycle into DML SQL.</td>
+</tr>
+<tr style="background-color: #e0e0e0; color: #808080; font-style: italic;">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inCycle_ID</td>
+<td valign="top">&nbsp;</td>
+<td>The wash cycle to be precompiled.</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom"><em>Output:</em></td>
+<td>All DML SQL are planned in the table <span style="color: #0000ff;">WASH_DML_PLAN</span>.</td>
+</tr>
+</tbody>
+</table>
+<p style="padding-left: 40px;"><span style="color: #0000ff;">VIEW_WASH_CYCLE_CODE</span> can be used to preview the complete code of stored procedure which will be generated for the wash cycle after precompilation.</p>
+<table style="margin-left: 40px; margin-right: 0px;" border="0" cellspacing="0" cellpadding="4">
+<tbody>
+<tr>
+<td colspan="3"><span style="color: #808080;">WASH_DEPLOY.</span><span style="color: blue;">PUBLISH_PROCEDURE</span></td>
+</tr>
+<tr>
+<td colspan="3">The function publishes a precompiled wash cycle as a stored procedure.</td>
+</tr>
+<tr style="background-color: #e0e0e0; color: #808080; font-style: italic;">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inCycle_ID</td>
+<td valign="top">&nbsp;</td>
+<td>The wash cycle to be published(deployed).</td>
+</tr>
+<tr>
+<td valign="top">inVer_Comment</td>
+<td align="center" valign="top">''</td>
+<td>Comment for this version.</td>
+</tr>
+<tr>
+<td valign="middle">inGen_Progress</td>
+<td align="center" valign="top">'Y'</td>
+<td>'Y': To generate progress status for every step;<br />'N': Does not generate the code for progress status.</td>
+</tr>
+<tr>
+<td valign="middle">inStep_Commit</td>
+<td align="center" valign="bottom">'N'</td>
+<td>'Y': Commit every step (consider of mass data);<br />'N': Commit once only at the end of whole wash cycle.</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom">Return Value:</td>
+<td>A new version number of this publish. (every time of publish will generate a new version)</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom" class="style1"><em>Output:</em></td>
+<td class="style1">Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table <span style="color: #0000ff;">WASH_VERSION</span> (with deployment status or error messages).</td>
+</tr>
+</tbody>
+</table>
 <ul>
-<li>Deployment Phase</li>
+<li>Deployment Phase </li>
 </ul>
-<p>&nbsp;</p>
+<p style="padding-left: 40px;">As shown in above diagram, there are two ways of production deployment:<br /><br />- <span style="text-decoration: underline;">Method 1</span> (recommended)<br />Distribute a manifest of metadata to production if the production database has the same setup of the DataWashroom environment as a deployment manager.<br /><br />- <span style="text-decoration: underline;">Method 2</span> (left side)<br />Distribute the final stored procedure to production if the production database is not allow to have the DataWashroom for any reason, or you don't want people to think that you are too lazy to write those boring code. No one else would care your code was written in your seat or was generated in washroom.</p>
+<p><strong>Utilities by Product</strong></p>
+<p><strong>&nbsp;</strong></p>
+<p><strong>Supported Databases</strong></p>
+<ul>
+<li>Oracle<br />- Supported.<br />&nbsp; </li>
+<li>SQL Server<br />- To be implemented later ... </li>
+</ul>
+
 </body>
 </html>
