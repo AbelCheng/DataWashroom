@@ -2,18 +2,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" >
 <head>
     <title>DataWashroom - Database Clean up Engine</title>
-
-	<style type="text/css">
-		.style1
-		{
-			height: 56px;
-		}
-	</style>
-
 </head>
 <body>
 <p><strong>Project Description</strong><br />Without washrooms today, imagine what would human society be like? In the era of the proliferation of information, data is also need to be localized excreta, control defecation.<br />The DataWashroom provides a filter core of the data-purification system, includes the common functions of data isolation and waste separation by a simplicity instruction set (7 instructions). The instruction engine handles pre-compiling, building, publishing (deploying), version control and documentation-generation. (It&rsquo;s compiling, not interpreting) The input of the compiler is some metadata in wash-instruction tables, the output is a stored procedure.</p>
-<p>For more intentions about this project, please see also the [Data Quality] section on the related project <a title="View-Plug-In" href="http://view.codeplex.com" target="_blank">http://view.codeplex.com</a> wiki page.</p>
+<p>For more intentions about this project, please see also the [<span style="color: #0000ff;">Data Quality</span>] section on the related project <a title="View-Plug-In" href="http://view.codeplex.com" target="_blank">http://view.codeplex.com</a> wiki page.</p>
 <p><strong>Instruction Set</strong><br />There are 7 build-in wash instructions shown as following:<br /><br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=485698" alt="Instruction Set" width="701" height="291" /></p>
 <ul>
 <li>The basic manipulation instructions mainly perform data isolation from source systems; </li>
@@ -384,7 +376,7 @@
 </tr>
 <tr>
 <td colspan="2" align="center" valign="bottom"><em>Output:</em></td>
-<td>Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table WASH_VERSION (with deployment status or error messages).</td>
+<td>Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table <span style="color: #0000ff;">WASH_VERSION</span> (with deployment status or error messages).</td>
 </tr>
 </tbody>
 </table>
@@ -453,8 +445,8 @@
 <td>A new version number of this publish. (every time of publish will generate a new version)</td>
 </tr>
 <tr>
-<td colspan="2" align="center" valign="bottom" class="style1"><em>Output:</em></td>
-<td class="style1">Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table <span style="color: #0000ff;">WASH_VERSION</span> (with deployment status or error messages).</td>
+<td colspan="2" align="center" valign="bottom"><em>Output:</em></td>
+<td>Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table <span style="color: #0000ff;">WASH_VERSION</span> (with deployment status or error messages).</td>
 </tr>
 </tbody>
 </table>
@@ -463,7 +455,86 @@
 </ul>
 <p style="padding-left: 40px;">As shown in above diagram, there are two ways of production deployment:<br /><br />- <span style="text-decoration: underline;">Method 1</span> (recommended)<br />Distribute a manifest of metadata to production if the production database has the same setup of the DataWashroom environment as a deployment manager.<br /><br />- <span style="text-decoration: underline;">Method 2</span> (left side)<br />Distribute the final stored procedure to production if the production database is not allow to have the DataWashroom for any reason, or you don't want people to think that you are too lazy to write those boring code. No one else would care your code was written in your seat or was generated in washroom.</p>
 <p><strong>Utilities by Product</strong></p>
-<p><strong>&nbsp;</strong></p>
+<p>All database packages of this project are organized as shown in following figure.</p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=499252" alt="" /></p>
+<p>The bottom two packages PROGRESS_TRACK and DEPLOY_UTILITY were designed to be used independently.</p>
+<ul>
+<li>PROGRESS_TRACK<br />This is a generalized redesign (from the parent project <a href="http://view.codeplex.com" target="_blank">http://view.codeplex.com</a>) of Progress Status Tracker which provides 4 public interfaces: </li>
+</ul>
+<div style="padding-left: 40px;">- <span style="color: #808080;">PROGRESS_TRACK.</span>REGISTER<br />- <span style="color: #808080;">PROGRESS_TRACK.</span>GO_STEP<br />- <span style="color: #808080;">PROGRESS_TRACK.</span>ON_ERROR<br />- <span style="color: #808080;">PROGRESS_TRACK.</span>POLLING<br /><br />A common usage can be like the below sample (for Oracle version):</div>
+<div style="padding-left: 40px; color: black; background-color: white;">
+<pre>    ...
+    tProgress_ID    <span style="color: #008080;">PLS_INTEGER</span>;
+<span style="color: blue;">BEGIN</span>
+    ...
+    tProgress_ID := <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">PROGRESS_TRACK.</span>REGISTER(tTotal_Steps);
+    ...
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color: blue;">NULL</span>, <span style="color: #a31515;">'Status information 1 ...'</span>);
+    ...
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color: blue;">NULL</span>, <span style="color: #a31515;">'Status information 2 ...'</span>);
+    ...
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color: blue;">NULL</span>, <span style="color: #a31515;">'Status information 3 ...'</span>);
+    ...
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color: blue;">NULL</span>, <span style="color: #a31515;">'Status information n ...'</span>);
+    ...
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color: blue;">NULL</span>, <span style="color: #a31515;">'Done.'</span>);
+<span style="color: #008080;">EXCEPTION</span>
+<span style="color: blue;">WHEN</span> <span style="color: #008080;">OTHERS </span><span style="color: blue;">THEN</span>
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">PROGRESS_TRACK.</span>ON_ERROR(tProgress_ID, <span style="color: #008080;">SQLERRM</span>);
+    ...
+<span style="color: blue;">END</span>;</pre>
+</div>
+<div style="padding-left: 40px;">Refer to the generated code of a wash stored procedure (with <span style="color: #808080;">inGen_Progress </span>option turned on) for more information about further binding to a business flow.<br />Then the view VIEW_PROGRESS_LOG or VIEW_WASH_LAST_PROGRESS_LOG can be used to monitor the whole ongoing progress in background.<br />Or, UI can use the procedure <span style="color: #808080;">PROGRESS_TRACK.</span>POLLING to display a progress bar.</div>
+<ul>
+<li>DEPLOY_UTILITY </li>
+</ul>
+<table style="margin-left: 40px; margin-right: 0px;" border="0" cellspacing="0" cellpadding="4">
+<tbody>
+<tr>
+<td colspan="3"><span style="color: #808080;">DEPLOY_UTILITY.</span><span style="color: blue;">EXPORT_INSERT_SQL</span></td>
+</tr>
+<tr>
+<td colspan="3">The function exports rows of a table into a script of INSERT SQL. It works like the toolbar button [Export Query Results...<em><span style="color: #808080;">to SQL file</span></em>] on PL/SQL IDE, but provides as a API and solves the reserved characters <span style="color: red; font-weight: bold;">&amp;</span> and <span style="color: red; font-weight: bold;">'</span>.</td>
+</tr>
+<tr style="background-color: #e0e0e0; color: #808080; font-style: italic;">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inTable_Name</td>
+<td valign="top">&nbsp;</td>
+<td>The table that rows to be exported.</td>
+</tr>
+<tr>
+<td valign="top">inSrc_Filter</td>
+<td align="center" valign="top"><span style="color: #808080;">NULL</span></td>
+<td><span style="color: #808080;">(Optional)</span>Specifies the search conditions used to limit the number of rows to be exported (E.g. <span style="color: #008000; background-color: #ffefbb;">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the table will be exported.</td>
+</tr>
+<tr>
+<td valign="middle">inOrder_By</td>
+<td align="center" valign="top"><span style="color: #808080;">NULL</span></td>
+<td><span style="color: #808080;">(Optional)</span>Specifies the order of rows to be generated in INSERT script. (E.g. <span style="color: #008000; background-color: #ffefbb;">TRAN_NO DESC, PRICE</span>)</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom">Return Value:</td>
+<td>The complete script of INSERT SQLs.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Extensibility</strong> and <strong>Applicability</strong></p>
+<p>Refer to the source code of 7 build-in wash instructions, extened instructions can also be customized when necessary.</p>
+<p>The original intention of DataWashroom is designed for data pretreatment, not for entire processings. To simplify subsequent processing system designs by ensuring the data quality in the central pretreatment stage.<br />So the generated stored procedure has following characteristics:</p>
+<ul>
+<li>Parameterless </li>
+</ul>
+<div style="padding-left: 40px;">It's sufficient for most centralized pretreatment applications. If you really need to pass some parameters to the generated stored procedure, the way of implementing a parameterize view can be used for reference (Oracle solution):<br />1. Define all parameters as member variables in a database package;</div>
+<div style="padding-left: 40px;">2. Define a view to exposes these member variables, just like a get accessor of a class&nbsp;property;</div>
+<div style="padding-left: 40px;">3. Set values to these member variables before execute the generated stored procedure.</div>
+<ul>
+<li>Singleton </li>
+</ul>
+<p>&nbsp;</p>
 <p><strong>Supported Databases</strong></p>
 <ul>
 <li>Oracle<br />- Supported.<br />&nbsp; </li>
