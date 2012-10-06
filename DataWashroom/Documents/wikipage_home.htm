@@ -84,7 +84,7 @@
 </table>
 <p>7 derived wash instruction tables:</p>
 <ul>
-<li>The main practices of following 3 instructions of basic manipulation is to refresh data from source systems to the isolation system, the refresh may include some basic corrections, tagging, null-reference transformation, etc. those rules base on the columns of the the same row or constants, and pivot transformation ... by the view on source data. </li>
+<li>The main practices of following 3 instructions of basic manipulation is to refresh data from source systems to the isolation system, the refresh may include some basic corrections, tagging, null-reference transformation, etc. those rules base on the columns of the the same row or constants, and pivot transformation ... by the view on source data. The refresh can be full refresh, partial refresh or incremental refresh. </li>
 </ul>
 <table border="0" cellspacing="0" cellpadding="3">
 <tbody>
@@ -494,7 +494,7 @@
 <td colspan="3"><span style="color: #808080;">DEPLOY_UTILITY.</span><span style="color: blue;">EXPORT_INSERT_SQL</span></td>
 </tr>
 <tr>
-<td colspan="3">The function exports rows of a table into a script of INSERT SQL. It works like the toolbar button [Export Query Results...<em><span style="color: #808080;">to SQL file</span></em>] on PL/SQL IDE, but provides as a API and solves the reserved characters <span style="color: red; font-weight: bold;">&amp;</span> and <span style="color: red; font-weight: bold;">'</span>.</td>
+<td colspan="3">This function exports rows of a table into a script of INSERT SQL. It works like the toolbar button [Export Query Results...<em><span style="color: #808080;">to SQL file</span></em>] on PL/SQL IDE, but provides as a API and solves the reserved characters [<span style="color: red; background-color: #ffefbb;">&amp;</span>] and [<span style="color: red; font-weight: bold; background-color: #ffefbb;">'</span>].</td>
 </tr>
 <tr style="background-color: #e0e0e0; color: #808080; font-style: italic;">
 <td valign="top">Parameters</td>
@@ -526,15 +526,55 @@
 <p>Refer to the source code of 7 build-in wash instructions, extened instructions can also be customized when necessary.</p>
 <p>The original intention of DataWashroom is designed for data pretreatment, not for entire processings. To simplify subsequent processing system designs by ensuring the data quality in the central pretreatment stage.<br />So the generated stored procedure has following characteristics:</p>
 <ul>
-<li>Parameterless </li>
+<li>Parameterless<br />It's sufficient for most centralized pretreatment applications.<br />If you really need to pass some parameters to the generated stored procedure, the way of implementing a parameterize view can be used for reference <em>(Oracle solution)</em>:<br />1. Define all parameters as member variables in a database package,<br />&nbsp; &nbsp; Encapsulate each of them by a get accessor (public function) and a set accessor <span style="color: #808080;">(Optional)</span>,<br />&nbsp; &nbsp; just like a property of a class;<br />2. Create a view to expose these member variables;<br />3. Set values to these member variables before execute the generated stored procedure.<br />&nbsp; &nbsp; These package-based variables act as globals within a single session (connection) scope.<br />&nbsp; </li>
+<li>Singleton<br />A centralized data pretreatment system is normally hosted as a singleton instance to avoid unnecessary repetition of warm-up time. Two common scenarios:<br />1. Act as a scheduled job without considering any concurrency.<br />2. Be triggered on-demand by a central controller which handles critical section (signaling and waiting mechanisms) and expiry window. - This controller will be in the coming release. It will be transparent to developer.<br />&nbsp; </li>
+<li>Sequentiality<br />The adoption of executing in sequence was based on the design target, the similar consideration as most washing machines.<br />This is one reason why although the instruction infrastructure allow custome instructions to be extended, but it is not encouraged to over extend too beyond the target of data pretreatment.<span style="color: #808080;"><em> (- It is not safe to take a cardiovascular medicine as viagra.)</em></span><br /><br />Another project for data mid-processing aided designing system based on the foundation of <a href="http://dbparallel.codeplex.com/" target="_blank">http://dbparallel.codeplex.com/</a> and <a href="http://view.codeplex.com/" target="_blank">http://view.codeplex.com/</a> may be in the plan later 2013, which will be good at parallelism. </li>
 </ul>
-<div style="padding-left: 40px;">It's sufficient for most centralized pretreatment applications. If you really need to pass some parameters to the generated stored procedure, the way of implementing a parameterize view can be used for reference (Oracle solution):<br />1. Define all parameters as member variables in a database package;</div>
-<div style="padding-left: 40px;">2. Define a view to exposes these member variables, just like a get accessor of a class&nbsp;property;</div>
-<div style="padding-left: 40px;">3. Set values to these member variables before execute the generated stored procedure.</div>
-<ul>
-<li>Singleton </li>
-</ul>
-<p>&nbsp;</p>
+<p><strong>Prevention</strong> over <strong>Treatment</strong></p>
+<p style="padding-left: 30px;">Such note often seen in public washrooms:<br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=500848" alt="Hand Washing" width="339" height="136" /><br /><span style="color: #808080;">(See: the</span> Before <span style="color: #808080;">and</span> After <span style="color: #808080;">Triggers)</span><br /><br />An example for data, [START_DATE, END_DATE] is one of common modes for storing slow change data in back office systems, the date range is error prone (overlapped or fragmentary) for manual maintenance without validation. However, introducing the checksum could avoid mistake as easy as washing hands. E.g.</p>
+<div style="color: black; background-color: white; padding-left: 30px;">
+<pre><span style="color: blue;">CREATE TABLE</span> ABC.SEC_HOLDINGS
+(
+    SEC_ID      VARCHAR2(16)                                     <span style="color: blue;">NOT NULL</span>,
+    HOLDINGS    NUMBER(19)                                       <span style="color: blue;">NOT NULL</span>,
+    START_DATE  <span style="color: blue;">DATE DEFAULT</span> TO_DATE(<span style="color: #a31515;">'1990-01-01'</span>, 'yyyy-mm-dd') <span style="color: blue;">NOT NULL</span>,
+    END_DATE    <span style="color: blue;">DATE DEFAULT</span> TO_DATE(<span style="color: #a31515;">'9999-12-31'</span>, 'yyyy-mm-dd') <span style="color: blue;">NOT NULL</span>,
+
+    <span style="color: blue;">CONSTRAINT</span> PK_SEC_HOLDINGS <span style="color: blue;">PRIMARY KEY</span> (SEC_ID, START_DATE),
+    <span style="color: blue;">CONSTRAINT</span> UK_SEC_HOLDINGS <span style="color: blue;">UNIQUE</span> (END_DATE, SEC_ID),
+    <span style="color: blue;">CONSTRAINT</span> CK_SEC_HOLDINGS_START_END <span style="color: blue;">CHECK</span> (START_DATE &lt;= END_DATE)
+);</pre>
+</div>
+<div style="color: black; background-color: white; padding-left: 30px;">
+<pre><span style="color: blue;">CREATE OR</span> <span style="color: magenta;">REPLACE</span> <span style="color: blue;">TRIGGER</span> ABC.TRG_SEC_HOLDINGS
+<span style="color: blue;">AFTER INSERT OR DELETE OR UPDATE OF</span> START_DATE, END_DATE <span style="color: blue;">ON</span> ABC.SEC_HOLDINGS
+<span style="color: blue;">DECLARE</span>
+    tSec_ID VARCHAR2(16);
+<span style="color: blue;">BEGIN</span>
+    <span style="color: blue;">SELECT</span>
+        <span style="color: magenta;">MIN</span>(SEC_ID) <span style="color: blue;">INTO</span> tSec_ID
+    <span style="color: blue;">FROM</span>
+    (
+        <span style="color: blue;">SELECT</span>
+            SEC_ID,
+            <span style="color: magenta;">SUM</span>(END_DATE - START_DATE + 1) - 
+               (<span style="color: magenta;">MAX</span>(END_DATE) - <span style="color: magenta;">MIN</span>(START_DATE) + 1) <span style="color: blue;">AS</span> <strong><span style="color: #ff0000;">CHECKSUM</span></strong>
+        <span style="color: blue;">FROM</span>
+            ABC.SEC_HOLDINGS
+        <span style="color: blue;">GROUP BY</span>
+            SEC_ID
+    )
+    <span style="color: blue;">WHERE</span>   ROWNUM    = 1
+        <span style="color: blue;">AND</span> <span style="color: #ff0000;">CHECKSUM</span> &lt;&gt; 0;
+
+    <span style="color: blue;">IF</span> tSec_ID <span style="color: blue;">IS NOT NULL THEN</span>
+        RAISE_APPLICATION_ERROR(-20021,
+            <span style="color: #a31515;">'Some [START_DATE, END_DATE]s are overlapped or fragmentary!
+             First issue SEC_ID: '</span> || tSec_ID);
+    <span style="color: blue;">END IF</span>;
+<span style="color: blue;">END</span> TRG_SEC_HOLDINGS;</pre>
+</div>
+<div style="padding-left: 30px;">This is just a sample (for a small table) to show the CHECKSUM algorithms. In practice, (for Oracle solution) a row level trigger should be used in conjunction with the statement level trigger to validate only changed IDs when the table has large data; (for SQL Server solution) it's even simpler. The main point here is to illustrate that it would always be much easier to prevent a mistake from the source input. But, it should be noted that this sample does not recommend to abuse triggers - mysophobia! After all, the life is not only for eating, the data is not only for inputting.<br />&nbsp;</div>
 <p><strong>Supported Databases</strong></p>
 <ul>
 <li>Oracle<br />- Supported.<br />&nbsp; </li>
