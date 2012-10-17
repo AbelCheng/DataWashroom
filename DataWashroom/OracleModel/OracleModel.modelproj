@@ -67,6 +67,9 @@
     <Content Include="1-Tables\15-WASH_PROGRESS.sql">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="1-Tables\16-CACHE_CONTROL.sql">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="2-Views\01-VIEW_WASH_ISTR_DOCUMENT.sql">
       <SubType>Content</SubType>
     </Content>
@@ -82,16 +85,19 @@
     <Content Include="4-Packages\01-PROGRESS_TRACK.pck">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\03-WASH_ENGINE.pck">
+    <Content Include="4-Packages\02-CACHE_UTILITY.pck">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\05-VIEW_WASH_CYCLE_CODE.sql">
+    <Content Include="4-Packages\04-WASH_ENGINE.pck">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\02-DEPLOY_UTILITY.pck">
+    <Content Include="4-Packages\06-VIEW_WASH_CYCLE_CODE.sql">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\04-WASH_DEPLOY.pck">
+    <Content Include="4-Packages\03-DEPLOY_UTILITY.pck">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\05-WASH_DEPLOY.pck">
       <SubType>Content</SubType>
     </Content>
     <Content Include="5-Triggers\01-TRG_WASH_CYCLE.trg">
@@ -119,6 +125,9 @@
       <SubType>Content</SubType>
     </Content>
     <Content Include="5-Triggers\09-TRG_WASH_ISTR_MUP_NA.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\10-TRG_WASH_CYCLE_DEL.trg">
       <SubType>Content</SubType>
     </Content>
     <Content Include="6-InitData\01-WASH_ISTR_TYPE.sql">
