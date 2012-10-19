@@ -780,7 +780,9 @@ BEGIN
 
 	COMMIT;
 
-	', tTotal_Steps + 1, inCycle_ID));
+	VPI.CACHE_UTILITY.SET_REFRESH_PROGRESS(''%s'', tProgress_ID);
+
+	', tTotal_Steps + 1, inCycle_ID, inCycle_ID));
 	END IF;
 
 	FOR I IN (SELECT PLAN_SQL, ISTR_ID, ISTR_BRIEF FROM VPI.WASH_DML_PLAN WHERE CYCLE_ID = inCycle_ID ORDER BY ISTR_ORDER, PLANNED_TIME)
