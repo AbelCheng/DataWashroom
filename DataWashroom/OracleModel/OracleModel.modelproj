@@ -79,6 +79,9 @@
     <Content Include="2-Views\03-VIEW_WASH_LAST_PROGRESS_LOG.sql">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="2-Views\04-VIEW_CACHE_LOCK.sql">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="3-Sequences\01-SEQ_PROGRESS_ID.sql">
       <SubType>Content</SubType>
     </Content>
@@ -91,7 +94,10 @@
     <Content Include="4-Packages\04-WASH_ENGINE.pck">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\06-VIEW_WASH_CYCLE_CODE.sql">
+    <Content Include="4-Packages\06-WASH_GLOBAL_CACHE.pck">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\07-VIEW_WASH_CYCLE_CODE.sql">
       <SubType>Content</SubType>
     </Content>
     <Content Include="4-Packages\03-DEPLOY_UTILITY.pck">
