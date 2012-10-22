@@ -18,7 +18,8 @@ CREATE OR REPLACE PACKAGE VPI.WASH_GLOBAL_CACHE IS
 
 PROCEDURE ENTER_LOCK
 (
-	inCycle_ID		VARCHAR2
+	inCycle_ID		VARCHAR2,
+	inWait_Timeout	PLS_INTEGER	:= VPI.CACHE_UTILITY.gDefault_Refresh_Timeout		-- Seconds
 );
 
 
@@ -35,14 +36,15 @@ CREATE OR REPLACE PACKAGE BODY VPI.WASH_GLOBAL_CACHE IS
 
 PROCEDURE ENTER_LOCK
 (
-	inCycle_ID		VARCHAR2
+	inCycle_ID		VARCHAR2,
+	inWait_Timeout	PLS_INTEGER		-- Seconds
 )
 IS
 	tLock_Return	PLS_INTEGER;
 	tIs_Refreshing	BOOLEAN;
 	tWash_Procedure	VARCHAR2(61);
 BEGIN
-	tLock_Return	:= VPI.CACHE_UTILITY.ENTER_REFRESH_LOCK(inCycle_ID);
+	tLock_Return	:= VPI.CACHE_UTILITY.ENTER_REFRESH_LOCK(inCycle_ID, inWait_Timeout);
 	tIs_Refreshing	:= (tLock_Return = 0 OR tLock_Return = 4);
 
 	IF tLock_Return = 0 THEN	-- Need to refresh
@@ -57,7 +59,7 @@ BEGIN
 	END IF;
 
 	IF tLock_Return = 0 OR tLock_Return = 10 THEN	-- The data is ready for reading
-		tLock_Return	:= VPI.CACHE_UTILITY.ENTER_READ_LOCK(inCycle_ID);
+		tLock_Return	:= VPI.CACHE_UTILITY.ENTER_READ_LOCK(inCycle_ID, inWait_Timeout);
 	END IF;
 
 EXCEPTION
