@@ -455,9 +455,9 @@
 </ul>
 <p style="padding-left: 40px;">As shown in above diagram, there are two ways of production deployment:<br /><br />- <span style="text-decoration: underline;">Method 1</span> (recommended)<br />Distribute a manifest of metadata to production if the production database has the same setup of the DataWashroom environment as a deployment manager.<br /><br />- <span style="text-decoration: underline;">Method 2</span> (left side)<br />Distribute the final stored procedure to production if the production database is not allow to have the DataWashroom for any reason, or you don't want people to think that you are too lazy to write those boring code. No one else would care your code was written in your seat or was generated in washroom.</p>
 <p><strong>Utilities by Product</strong></p>
-<p>All database packages of this project are organized as shown in following figure.</p>
-<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=499252" alt="" /></p>
-<p>The bottom two packages PROGRESS_TRACK and DEPLOY_UTILITY were designed to be used independently.</p>
+<p>All database packages of this project are organized in the package dependency graph below.</p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=515630" alt="Packages Dependence" width="636" height="268" /></p>
+<p>The bottom 3 blue packages PROGRESS_TRACK, DEPLOY_UTILITY and CACHE_UTILITY were designed to be used independently.</p>
 <ul>
 <li>PROGRESS_TRACK<br />This is a generalized redesign (from the parent project <a href="http://view.codeplex.com" target="_blank">http://view.codeplex.com</a>) of Progress Status Tracker which provides 4 public interfaces: </li>
 </ul>
@@ -574,9 +574,30 @@
     <span style="color: blue;">END IF</span>;
 <span style="color: blue;">END</span> TRG_SEC_HOLDINGS;</pre>
 </div>
-<div style="padding-left: 30px;">This is just a sample (for a small table) to show the CHECKSUM algorithms. In practice, (for Oracle solution) a row level trigger should be used in conjunction with the statement level trigger to validate only changed IDs when the table has large data; (for SQL Server solution) it's even simpler. The main point here is to illustrate that it would always be much easier to prevent a mistake from the source input. But, it should be noted that this sample does not recommend to abuse triggers - mysophobia! After all, the life is not only for eating, the data is not only for inputting.<br />&nbsp;</div>
+<div style="padding-left: 30px;">This is just a sample (for a small table) to show the CHECKSUM algorithms. In practice, (for Oracle solution) a row level trigger should be used in conjunction with the statement level trigger to validate only changed IDs when the table has large data; (for SQL Server solution) it's even simpler. The main point here is to illustrate that it would always be much easier to prevent a mistake from the source input. But, it should be noted that this sample does not recommend to abuse triggers - mysophobia! After all, the life is not only for eating, the data is not only for inputting.<br />Cleaning runway of airfield is airport company's responsibility. Airline companies should not be held respnsible for runway clearance.</div>
 <p><strong>Data Pollution Report</strong><br />Distributing a complete list of bad data (base on known rules) everyday to every data owner may help people to look for accurate pathogeny. Sooner or later each source of problem application(design) will be laid bare. No matter how arrogant or humble, strong or weak ... a application is, every data sits equal on the toilet.</p>
 <p>A utility for generating these queries(views) of data pollution report will be introduced in later release.</p>
+<p><strong>Requirement on requirement</strong><br />In order to have a compact and well structured requirement for a clean system, some basic principles are recommended to keep in mind during the requirements analysis.</p>
+<ol>
+<li>Disentangle functional dependencies between attributes in source systems base on true business meanings.<br />As a isolation of <span style="color: #ff0000;">basis data</span>, the target system needs to carry out 3NF or BCNF. Some normalized relationships might have been safeguarded in source systems already, the requirement specifications is required to list the rest of them, and some redundant attributes can be cancelled. </li>
+<li>Unify different units of measurement into a standardized system of units.<br />For example, converting all units of measurement into internationally standard measurement units (miles/h =&gt; km/h, yards =&gt; metres) if source systems use multiple different systems of units; converting all native dollars into the settlement currency; converting mixed ISO code systems(two-letter code and three-letter code) into a pure ISO code system (either one of them)... etc. </li>
+<li>Act as a global cache of basis data from source systems, to provide downstream back-office systems a clean data source with optimization for query performance is a key service purpose of the DataWashroom. It's requirement specification's responsibility to investigate: 
+<ul>
+<li>Which attributes are often used as keys to look up others? </li>
+<li>Which attributes are usually coupling together in consumers' queries? </li>
+<li>What amount of data and growthrate of size? </li>
+<li>What probability distributions of different partitions of data being used in most queries? </li>
+</ul>
+Etc., these investigations will be substantial arguments for the physical design of target schema. </li>
+<li>Summarize data quality requirements into 3 basic parts: 
+<ul>
+<li>Regular rules within the same row.<br />Such as: non-null, reasonable values range and comparisons, etc. </li>
+<li>Business keys uniqueness, relationships conflict. </li>
+<li>Relation-chains directivity and connectivity. </li>
+</ul>
+</li>
+</ol>
+<p>The sufficient analyses is intended to simplify solutions through inductiveness trimness and summary, not to complicate matters.</p>
 <p><strong>Supported Databases</strong></p>
 <ul>
 <li>Oracle<br />- Supported.<br />&nbsp; </li>
