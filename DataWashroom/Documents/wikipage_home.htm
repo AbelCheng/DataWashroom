@@ -522,12 +522,30 @@
 </tr>
 </tbody>
 </table>
+<ul>
+<li>CACHE_UTILITY </li>
+</ul>
+<p style="padding-left: 40px;">CACHE_CONTROL is the central control table which defines a unique identifier and expiration for each cache.<br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=522442" alt="Cache Periods" width="564" height="80" /><br />&nbsp;<br />The CACHE_UTILITY package provides a global cache control similar to <a title="Reader-Writer Locks" href="http://msdn.microsoft.com/en-us/library/bz6sth95.aspx" target="_blank">Reader-Writer Locks (refer to MSDN)</a>.<br />Refresh Lock is different from write lock:<br />- Only work in critical period while cache expiring, as shown above.<br />- Only one refresher can obtain the token to exclusively access for refreshing, other blocked refreshers will not refresh again when they enter the lock, seen in the circuit diagram below.<br />&nbsp;<br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=522443" alt="Read-Write Lock" width="445" height="514" /></p>
+<ul>
+<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">ENTER</span>_REFRESH_LOCK </li>
+<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">EXIT</span>_REFRESH_LOCK </li>
+<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">ENTER</span>_READ_LOCK </li>
+<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">EXIT</span>_READ_LOCK </li>
+</ul>
+<p style="padding-left: 30px;">The diagram in next section [Singleton] will briefly explain the use of these APIs.</p>
 <p><strong>Extensibility</strong> and <strong>Applicability</strong></p>
 <p>Refer to the source code of 7 build-in wash instructions, extened instructions can also be customized when necessary.</p>
 <p>The original intention of DataWashroom is designed for data pretreatment, not for entire processings. To simplify subsequent processing system designs by ensuring the data quality in the central pretreatment stage.<br />So the generated stored procedure has following characteristics:</p>
 <ul>
-<li>Parameterless<br />It's sufficient for most centralized pretreatment applications.<br />If you really need to pass some parameters to the generated stored procedure, the way of implementing a parameterize view can be used for reference <em>(Oracle solution)</em>:<br />1. Define all parameters as member variables in a database package,<br />&nbsp; &nbsp; Encapsulate each of them by a get accessor (public function) and a set accessor <span style="color: #808080;">(Optional)</span>,<br />&nbsp; &nbsp; just like a property of a class;<br />2. Create a view to expose these member variables;<br />3. Set values to these member variables before execute the generated stored procedure.<br />&nbsp; &nbsp; These package-based variables act as globals within a single session (connection) scope.<br />&nbsp; </li>
-<li>Singleton<br />A centralized data pretreatment system is normally hosted as a singleton instance to avoid unnecessary repetition of warm-up time. Two common scenarios:<br />1. Act as a scheduled job without considering any concurrency.<br />Scheduled job calls the generated stored procedure directly.<br />2. Be triggered on-demand by a central controller which handles critical section and expiry window.<br />Always enclose those queries which will select from global cache in a pair of <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">ENTER_LOCK</span><span style="color: #808080;">(inCycle_ID)</span> and <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">EXIT_LOCK</span><span style="color: #808080;">(inCycle_ID)<br /></span><em>(Note: Don't forget to EXIT_LOCK in exception block to make sure the read lock will always be released)</em>.<br />The CACHE_EXPIRY (minutes) is defined in CACHE_CONTROL table, a new entry will be be there accompanied by a new wash CYCLE_ID be created, default as 240 minutes (4 hours).<br />&nbsp;<br />Following diagram shown the internal implementation of cach lock mechanism.<br /><br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=518069" alt="Global Wash Cache" width="483" height="578" />&nbsp; <br /><span style="color: #ff0000;">Risk </span>of using:<br /><br />&nbsp; </li>
+<li>Parameterless<br />It's sufficient for most centralized pretreatment applications.<br />If you really need to pass some parameters to the generated stored procedure, the way of implementing a parameterize view can be used for reference <em>(Oracle solution)</em>: <ol>
+<li>Define all parameters as member variables in a database package,<br />Encapsulate each of them by a get accessor (public function) and a set accessor <span style="color: #808080;">(Optional)</span>, just like a property of a class; </li>
+<li>Create a view to expose these member variables; </li>
+<li>Set values to these member variables before execute the generated stored procedure.<br />These package-based variables act as globals within a single session (connection) scope. </li>
+</ol></li>
+<li>Singleton<br />A centralized data pretreatment system is normally hosted as a singleton instance to avoid unnecessary repetition of warm-up time. Two common scenarios: <ol>
+<li>Act as a scheduled job without considering any concurrency.<br />Scheduled job calls the generated stored procedure directly. </li>
+<li>Be triggered on-demand by a central controller which handles critical section and expiry window.<br />Always enclose those queries which will select from global cache in a pair of <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">ENTER_LOCK</span><span style="color: #808080;">(inCycle_ID)</span> and <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">EXIT_LOCK</span><span style="color: #808080;">(inCycle_ID)<br /></span><em>(Note: Don't forget to EXIT_LOCK in exception block to make sure the read lock will always be released)</em>.<br />The CACHE_EXPIRY (minutes) is defined in CACHE_CONTROL table, a new entry will be be there accompanied by a new wash CYCLE_ID be created, default as 240 minutes (4 hours). </li>
+</ol>Following diagram shown the internal implementation of cache lock mechanism.<br /><br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=518069" alt="Global Wash Cache" width="483" height="578" />&nbsp; <br /><span style="color: #ff0000;">Risk </span>of using:<br /><br />&nbsp; </li>
 <li>Sequentiality<br />The adoption of executing in sequence was based on the design target, the similar consideration as most washing machines.<br />This is one reason why although the instruction infrastructure allow custome instructions to be extended, but it is not encouraged to over extend too beyond the target of data pretreatment.<span style="color: #808080;"><em> (- It is not safe to take a cardiovascular medicine as viagra.)</em></span><br /><br />Another project for data mid-processing aided designing system based on the foundation of <a href="http://dbparallel.codeplex.com/" target="_blank">http://dbparallel.codeplex.com/</a> and <a href="http://view.codeplex.com/" target="_blank">http://view.codeplex.com/</a> may be in the plan later 2013, which will be good at parallelism. </li>
 </ul>
 <p><strong>Prevention</strong> over <strong>Treatment</strong></p>
@@ -601,7 +619,7 @@ Etc., these investigations will be substantial arguments for the physical design
 <p><strong>Supported Databases</strong></p>
 <ul>
 <li>Oracle<br />- Supported.<br />&nbsp; </li>
-<li>SQL Server<br />- To be implemented later ... </li>
+<li>SQL Server<br />- To be implemented ... </li>
 </ul>
 
 </body>
