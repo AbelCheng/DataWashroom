@@ -85,6 +85,9 @@
     <Content Include="3-Sequences\01-SEQ_PROGRESS_ID.sql">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="3-Sequences\02-SEQ_CACHE_LOCK_ORDINAL.sql">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="4-Packages\01-PROGRESS_TRACK.pck">
       <SubType>Content</SubType>
     </Content>
@@ -94,16 +97,19 @@
     <Content Include="4-Packages\04-WASH_ENGINE.pck">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\06-WASH_GLOBAL_CACHE.pck">
+    <Content Include="4-Packages\07-WASH_GLOBAL_CACHE.pck">
       <SubType>Content</SubType>
     </Content>
-    <Content Include="4-Packages\07-VIEW_WASH_CYCLE_CODE.sql">
+    <Content Include="4-Packages\08-VIEW_WASH_CYCLE_CODE.sql">
       <SubType>Content</SubType>
     </Content>
     <Content Include="4-Packages\03-DEPLOY_UTILITY.pck">
       <SubType>Content</SubType>
     </Content>
     <Content Include="4-Packages\05-WASH_DEPLOY.pck">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="4-Packages\06-VCH_ID_ARY.tps">
       <SubType>Content</SubType>
     </Content>
     <Content Include="5-Triggers\01-TRG_WASH_CYCLE.trg">
@@ -134,6 +140,9 @@
       <SubType>Content</SubType>
     </Content>
     <Content Include="5-Triggers\10-TRG_WASH_CYCLE_DEL.trg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="5-Triggers\11-TRG_CACHE_CONTROL.trg">
       <SubType>Content</SubType>
     </Content>
     <Content Include="6-InitData\01-WASH_ISTR_TYPE.sql">
