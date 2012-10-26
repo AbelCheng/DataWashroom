@@ -529,10 +529,10 @@
 <ul>
 <li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">ENTER</span>_REFRESH_LOCK </li>
 <li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">EXIT</span>_REFRESH_LOCK </li>
-<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">ENTER</span>_READ_LOCK </li>
-<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #ff0000;">EXIT</span>_READ_LOCK </li>
+<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #008000;">ENTER</span>_READ_LOCK </li>
+<li><span style="color: #808080;">CACHE_UTILITY.</span><span style="color: #008000;">EXIT</span>_READ_LOCK </li>
 </ul>
-<p style="padding-left: 30px;">The diagram in next section [Singleton] will briefly explain the use of these APIs.</p>
+<p style="padding-left: 20px;">The diagram in next section [Singleton] will briefly explain the use of these APIs.</p>
 <p><strong>Extensibility</strong> and <strong>Applicability</strong></p>
 <p>Refer to the source code of 7 build-in wash instructions, extened instructions can also be customized when necessary.</p>
 <p>The original intention of DataWashroom is designed for data pretreatment, not for entire processings. To simplify subsequent processing system designs by ensuring the data quality in the central pretreatment stage.<br />So the generated stored procedure has following characteristics:</p>
@@ -544,8 +544,51 @@
 </ol></li>
 <li>Singleton<br />A centralized data pretreatment system is normally hosted as a singleton instance to avoid unnecessary repetition of warm-up time. Two common scenarios: <ol>
 <li>Act as a scheduled job without considering any concurrency.<br />Scheduled job calls the generated stored procedure directly. </li>
-<li>Be triggered on-demand by a central controller which handles critical section and expiry window.<br />Always enclose those queries which will select from global cache in a pair of <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">ENTER_LOCK</span><span style="color: #808080;">(inCycle_ID)</span> and <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">EXIT_LOCK</span><span style="color: #808080;">(inCycle_ID)<br /></span><em>(Note: Don't forget to EXIT_LOCK in exception block to make sure the read lock will always be released)</em>.<br />The CACHE_EXPIRY (minutes) is defined in CACHE_CONTROL table, a new entry will be be there accompanied by a new wash CYCLE_ID be created, default as 240 minutes (4 hours). </li>
-</ol>Following diagram shown the internal implementation of cache lock mechanism.<br /><br /><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=518069" alt="Global Wash Cache" width="483" height="578" />&nbsp; <br /><span style="color: #ff0000;">Risk </span>of using:<br /><br />&nbsp; </li>
+<li>Be triggered on-demand by a central controller which handles critical section and expiry window.<br />Always enclose those queries which will select from global cache in a pair of <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">ENTER_LOCK</span><span style="color: #808080;">(inCycle_ID)</span> and <span style="color: #808080;">WASH_GLOBAL_CACHE.</span><span style="color: #ff0000;">EXIT_LOCK</span><span style="color: #808080;">(inCycle_ID)<br /></span><em>(Note: Don't forget to EXIT_LOCK in exception block to make sure the read lock will always be released)</em>.<br />The CACHE_EXPIRY (minutes) is defined in CACHE_CONTROL table, a new entry will be there accompanied by a new wash CYCLE_ID be created, default as 240 minutes (4 hours). </li>
+</ol>
+<p>Following diagram shown the internal implementation of cache lock mechanism.</p>
+<p style="padding-left: 60px;"><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&amp;DownloadId=518069" alt="Global Wash Cache" width="483" height="578" /></p>
+<span style="text-decoration: underline;">Risk of dead lock</span> 
+<ul>
+<li>The <span style="color: #808080;">WASH_GLOBAL_CACHE.</span>EXIT_LOCK might be forgotten to call, then the lock would never be released until a session terminates.<br />A similar way introduced by MSDN to avoid forgetting: <ol>
+<li>Create a stored procedure that encapsulates together your DML operations which will query from a cache (a cache is a set of tables). Put this stored procedure in your package body only as a private member, don't expose it as a public member in package. For example:
+<div style="color: black; background-color: white;">
+<pre><span style="color: blue;">PROCEDURE</span> MY_DM_FROM_CACHEA(...)
+<span style="color: blue;">AS</span>
+<span style="color: blue;">BEGIN</span>
+    ...
+    <span style="color: blue;">INSERT</span> <span style="color: blue;">INTO</span> XYZ.LOCAL_TABLE1 (...)
+    <span style="color: blue;">SELECT</span> ... <span style="color: blue;">FROM</span> ABC.GLOBAL_CACHE_TABLE1, ... <span style="color: blue;">WHERE</span> ...;
+    ...
+    <span style="color: blue;">UPDATE</span> XYZ.LOCAL_TABLE2 L
+    <span style="color: blue;">SET</span> COL1 = (<span style="color: blue;">SELECT</span> G.VAL1 <span style="color: blue;">FROM</span> ABC.GLOBAL_CACHE_TABLE2 G <span style="color: blue;">WHERE</span> ...);
+    ...
+<span style="color: blue;">END</span> MY_DM_FROM_CACHEA;</pre>
+</div>
+</li>
+<li>Create another wrapper stored procedure that handles the lock and call the private stored procedure. For example:
+<div style="color: black; background-color: white;">
+<pre><span style="color: blue;">PROCEDURE</span> PUB_DM_FROM_CACHEA(...)
+<span style="color: blue;">AS</span>
+    tCycle_ID CONSTANT VARCHAR2(32) := <span style="color: #a31515;">'DPT.WASH_A'</span>;
+    <span style="color: green;">-- The Cycle ID is also the Cache ID.</span>
+<span style="color: blue;">BEGIN</span>
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">WASH_GLOBAL_CACHE.</span>ENTER_LOCK<span style="color: #808080;">(tCycle_ID)</span>;
+
+    <strong>MY_DM_FROM_CACHEA</strong>(...);
+
+    <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">WASH_GLOBAL_CACHE.</span>EXIT_LOCK<span style="color: #808080;">(tCycle_ID)</span>;
+<span style="color: #ff00ff;">EXCEPTION</span>
+    <span style="color: blue;">WHEN</span> OTHERS <span style="color: blue;">THEN</span>
+        <span style="color: #c0c0c0;">VPI.</span><span style="color: #808080;">WASH_GLOBAL_CACHE.</span>EXIT_LOCK<span style="color: #808080;">(tCycle_ID)</span>;
+        <span style="color: #ff00ff;">RAISE</span>;
+<span style="color: blue;">END</span> PUB_DM_FROM_CACHEA;</pre>
+</div>
+</li>
+</ol></li>
+<li>Multiple caches' data might be used in the same query, and multiple concurrent sessions interlace them in different order </li>
+</ul>
+<br />&nbsp; </li>
 <li>Sequentiality<br />The adoption of executing in sequence was based on the design target, the similar consideration as most washing machines.<br />This is one reason why although the instruction infrastructure allow custome instructions to be extended, but it is not encouraged to over extend too beyond the target of data pretreatment.<span style="color: #808080;"><em> (- It is not safe to take a cardiovascular medicine as viagra.)</em></span><br /><br />Another project for data mid-processing aided designing system based on the foundation of <a href="http://dbparallel.codeplex.com/" target="_blank">http://dbparallel.codeplex.com/</a> and <a href="http://view.codeplex.com/" target="_blank">http://view.codeplex.com/</a> may be in the plan later 2013, which will be good at parallelism. </li>
 </ul>
 <p><strong>Prevention</strong> over <strong>Treatment</strong></p>
