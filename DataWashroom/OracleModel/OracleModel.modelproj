@@ -82,6 +82,9 @@
     <Content Include="2-Views\04-VIEW_CACHE_LOCK.sql">
       <SubType>Content</SubType>
     </Content>
+    <Content Include="2-Views\05-VIEW_CACHE_SAFE_PERIOD.sql">
+      <SubType>Content</SubType>
+    </Content>
     <Content Include="3-Sequences\01-SEQ_PROGRESS_ID.sql">
       <SubType>Content</SubType>
     </Content>
