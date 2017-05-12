@@ -1,0 +1,883 @@
+<div class="wikidoc">
+<p><strong>Project Description</strong><br>
+Without washrooms today, imagine what would human society be like? In the era of the proliferation of information, data is also need to be localized excreta, control defecation.<br>
+The DataWashroom provides a filter core of the data-purification system, includes the common functions of data isolation and waste separation by a simplicity instruction set (7 instructions). The instruction engine handles pre-compiling, building, publishing
+ (deploying), version control and documentation-generation. (It&rsquo;s compiling, not interpreting) The input of the compiler is some metadata in wash-instruction tables, the output is a stored procedure.</p>
+<p>For more intentions about this project, please see also the [<span style="color:#000080">Data Quality</span>] section on the related project
+<a title="View-Plug-In" href="http://view.codeplex.com" target="_blank">http://view.codeplex.com</a> wiki page.</p>
+<p><strong>Instruction Set</strong><br>
+There are 7 build-in wash instructions shown as following:<br>
+<br>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=485698" alt="Instruction Set" width="701" height="291"></p>
+<ul>
+<li>The basic manipulation instructions mainly perform data isolation from source systems;
+</li><li>The relationship clean-up instructions perform the waste separation. </li></ul>
+<p>Clean-up is not just about deleting those no longer needed historical data or garbage data. The clean-up here emphasizes particularly on treatment for bad data. In order to simplify the generalized common solution from untold symptomatic treatments for bad
+ data, the design thinking of above build-in wash instructions is based on following conventions:</p>
+<ul>
+<li>Face duplicate keys, none of them should be deleted physically. Instead, additional tags will be taken part in the discriminator to uniquely identify a business key. For example,<br>
+<br>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=486589" alt="Duplicate key discriminator" width="613" height="112">
+</li></ul>
+<p style="padding-left:30px">The duplicate key treatment is subdivided into two alternative methods:<br>
+&nbsp;- <span style="text-decoration:underline">Check Unique Key </span>(<span style="color:#0000ff">CHK_UK</span>)<br>
+&nbsp;&nbsp; Only adopt qualified rows, exclude all duplicate rows.<br>
+&nbsp;- <span style="text-decoration:underline">Sort Duplicate Key</span> (<span style="color:#0000ff">RNK_DK</span>)<br>
+&nbsp;&nbsp; Assign a sequential number of every row within each partition of supposed unique key by a specified ordering rule. So that the first (top 1) row of each supposed unique key can be picked out directly.</p>
+<ul>
+<li>Face missing keys, all of supposed foreign keys should be made up in the primary table or bridge table if they were missing before, to avoid missing relationship. So that all subsequent users can consume the data straightforwardly and much more efficiently.
+ For example,<br>
+<br>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=490741" alt="Make up missing keys">
+</li></ul>
+<p><strong>Wash Cycle</strong><br>
+All 7 wash-instructions inherit from the base WASH_ISTR. They are organized under the wash cycle in sequence.</p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=487105" alt="Washing Cycle Diagram" width="643" height="867"></p>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center"><strong>WASH_CYCLE</strong></td>
+</tr>
+<tr>
+<td colspan="2">A wash cycle is a sequential workflow of wash instructions.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">CYCLE_ID</span>:</td>
+<td>The unique mnemonic identifier for a wash cycle, consider a naming convention within the enterprise (like a short namespace).</td>
+</tr>
+<tr>
+<td valign="top">PROCEDURE_NAME:</td>
+<td>Define the stored procedure name of the wash cycle to be generated, just as the executable file name to an application. The schema name must be included in the stored procedure name (e.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.PRETREATMENT</span>).</td>
+</tr>
+<tr>
+<td valign="top">DESCRIPTION_:</td>
+<td>Arbitrary introduction of the wash cycle, it can be brief like an application name.</td>
+</tr>
+<tr>
+<td valign="top">OWNER_:</td>
+<td>The owner of the wash cycle.</td>
+</tr>
+<tr>
+<td valign="top">LATEST_VERSION:</td>
+<td>This is a free maintenance column with initialization <span style="color:#008000; background-color:#ffefbb">
+0</span>. It's used inside version control.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Wash Instructions</strong></p>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center"><strong>WASH_ISTR</strong></td>
+</tr>
+<tr>
+<td colspan="2">This is the base table of all 7 wash-instruction tables. Each row of this table is a wash instruction declaration. For a top-down design, this table can also be used for storing requirement or outline design with every wash step of a wash cycle.
+ For the compiler, this base table is treated like a header file to C&#43;&#43;.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>Defines the unique mnemonic identifier for a wash instruction, consider a naming convention within the enterprise.</td>
+</tr>
+<tr>
+<td valign="top">CYCLE_ID:</td>
+<td>Which wash cycle does the wash instruction belong to.</td>
+</tr>
+<tr>
+<td valign="top">ISTR_TYPE:</td>
+<td>The type of instruction can be one of: <span style="color:#008080">DELETE, COPY, MERGE, CHK_UK, RNK_DK, MUP_MK, MUP_NA</span>. It indicates the definition of the instruction is located in which derived instruction table.</td>
+</tr>
+<tr>
+<td valign="top">ISTR_ORDER:</td>
+<td>The step ordinal of the instruction within its wash cycle.</td>
+</tr>
+<tr>
+<td valign="top">DESCRIPTION_:</td>
+<td>The brief introduction of what is this step going to do. This is an optional info, but it can be useful for generating the progress status for every step and documentation-generation.</td>
+</tr>
+</tbody>
+</table>
+<p>7 derived wash instruction tables:</p>
+<ul>
+<li>The main practices of following 3 instructions of basic manipulation is to refresh data from source systems to the isolation system, the refresh may include some basic corrections, tagging, null-reference transformation, etc. those rules base on the columns
+ of the the same row or constants, and pivot transformation ... by the view on source data. The refresh can be full refresh, partial refresh or incremental refresh.
+</li></ul>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>DELETE</strong></td>
+</tr>
+<tr>
+<td colspan="2">Removes rows from a table. For instance, to refresh data from source system, a DELETE step could need to be operated before COPY.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the table from which the rows are to be deleted. Schema name is always required in the table name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.WORK_TABLE</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_FILTER:</td>
+<td>Specifies the conditions used to limit the number of rows that are deleted (E.g.
+<span style="color:#008000; background-color:#ffefbb">ID_TYPE = 'ISIN'</span>). If this column is NULL, DELETE removes all the rows from the table.</td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>COPY</strong></td>
+</tr>
+<tr>
+<td colspan="2">Copies all matching columns (by column name) of data from a source table or view to a destination table.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VIEW:</td>
+<td>Specifies the source table or view to be copied from. Schema name is always required in the table or view name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.VIEW_SRC</span>)</td>
+</tr>
+<tr>
+<td valign="top">SRC_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be copied (E.g.
+<span style="color:#008000; background-color:#ffefbb">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the source will be copied.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the destination table from which the rows are to be copied to. Schema name is always required in the table name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.TABLE_DST</span>)</td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>MERGE</strong></td>
+</tr>
+<tr>
+<td colspan="2">Merges specified matching columns (by column name) of data from a source table or view to a target table - Updating specified columns in a target table if a matching row exists, or inserting the data as a new row if a matching row does not exist.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VIEW:</td>
+<td>Specifies the source table or view to be merged from. Schema name is always required in the table or view name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.VIEW_SRC</span>)</td>
+</tr>
+<tr>
+<td valign="top">SRC_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be merged (E.g.
+<span style="color:#008000; background-color:#ffefbb">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the source will be consumed as the source data.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the destination table to which the rows are to be copied. Schema name is always required in the table name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">JOIN_COLUMNS:</td>
+<td>Specifies the list of columns on which source table/view is joined with the target table to determine where they match. Multiple columns must be delimited by commas. (E.g.
+<span style="color:#008000; background-color:#ffefbb">POS_ID, GRP_ID, DATE_</span>) The column names must exist in both source table/view and destination table.</td>
+</tr>
+<tr>
+<td valign="top">UPDATE_COLUMNS:</td>
+<td>Specifies a comma-separated list of columns to be updated in the destination table by matching rows from the source table/view (matched by JOIN_COLUMNS). A column that is referenced in JOIN_COLUMNS list can
+<span style="color:#ff0000">not</span> be included in the UPDATE_COLUMNS list.</td>
+</tr>
+<tr>
+<td valign="top">INSERT_COLUMNS:</td>
+<td>Specifies a comma-separated list of columns which will be copied from the source table/view to the destination table when matching rows did not exist. A column in JOIN_COLUMNS list can also be included in the INSERT_COLUMNS list.</td>
+</tr>
+<tr>
+<td colspan="2"><em>UPDATE_COLUMNS and INSERT_COLUMNS are optional, but at least one of them must be specified, they can be specified both.</em></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Following 2 instructions of duplicate keys treatment are aimed mostly at the situation of source system does not define proper primary keys or unique constraints, some biased designs don't even allow business key constraints to sit in the table.
+</li></ul>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>CHK_UK</strong></td>
+</tr>
+<tr>
+<td colspan="2">Check Unique Key &ndash; Checks the uniqueness by a supposed business key, and tags it something if a row is unique or tags it something if a row is duplicate.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the target table to be checked. Schema name is always required in the table name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be checked (E.g.
+<span style="color:#008000; background-color:#ffefbb">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the table will be checked.</td>
+</tr>
+<tr>
+<td valign="top">KEY_COLUMNS:</td>
+<td>Specifies a column or a list of columns which is supposed to be a unique key. A composite key (includes two or more columns) must be delimited by commas (E.g.
+<span style="color:#008000; background-color:#ffefbb">DATE_, POS_ID</span>).</td>
+</tr>
+<tr>
+<td valign="top">SET_EXPR_IF_UNIQUE:</td>
+<td>Specifies a comma-separated list of clause(s) {column_name = expression}[ ,...n ] for tagging a row if its supposed key is unique. For example:
+<span style="color:#008000; background-color:#ffefbb">IS_QUALIFIED = 'Y', REDIRECT_CODE = ORIG_CODE</span>.</td>
+</tr>
+<tr>
+<td valign="top">SET_EXPR_IF_DUPLICATE:</td>
+<td>Specifies a comma-separated list of clause(s) {column_name = expression}[ ,...n ] for tagging a row if its supposed key is duplicate. For example:
+<span style="color:#008000; background-color:#ffefbb">IS_QUALIFIED = 'N', REDIRECT_CODE = 'N/A'</span>.</td>
+</tr>
+<tr>
+<td colspan="2"><em>At least one of SET_EXPR_IF_UNIQUE or/and SET_EXPR_IF_DUPLICATE must be specified, normally they should be specified both.</em></td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>RNK_DK</strong></td>
+</tr>
+<tr>
+<td colspan="2">Rank Duplicate Key &ndash; Checks the uniqueness by a supposed business key, ranks every row within their partition of the supposed key, and assigns a sequential number of every row, starting at 1 for the first row in each partition.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>Specifies the target table to be checked. Schema name is always required in the table name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be checked (E.g.
+<span style="color:#008000; background-color:#ffefbb">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the table will be checked.</td>
+</tr>
+<tr>
+<td valign="top">KEY_COLUMNS:</td>
+<td>Specifies a column or a list of columns which is supposed to be a unique key. A composite key (includes two or more columns) must be delimited by commas (E.g.
+<span style="color:#008000; background-color:#ffefbb">DATE_, POS_ID</span>).</td>
+</tr>
+<tr>
+<td valign="top">ORDER_BY:</td>
+<td>The ORDER_BY clause determines the sequence in which the rows are assigned their unique ROW_NUMBER within a specified partition (E.g.
+<span style="color:#008000; background-color:#ffefbb">TRAN_NO DESC, PRICE</span>). It is required.</td>
+</tr>
+<tr>
+<td valign="top">RN_COLUMN:</td>
+<td>Specifies the column for filling the ROW_NUMBER. It is required, the column type must be NUMBER or compatible types.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>The direct purpose of following 2 instructions of missing keys treatment is to avoid using LEFT/RIGHT OUTER JOIN in most cases. (A common cause of this situation could be the source table does not define properly foreign key constraint, non-null constraint,
+ etc.) </li></ul>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>MUP_MK</strong></td>
+</tr>
+<tr>
+<td colspan="2">Make up Missing Keys &ndash; the compensation inserts unique rows contained by the source table/view (select distinct supposed foreign key and coping values) but missing in the target table (by supposed primary key) originally.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VIEW:</td>
+<td>The source table/view which references the universal set of supposed foreign key. Schema name is always required in the table or view name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.VIEW_SRC</span>)</td>
+</tr>
+<tr>
+<td valign="top">SRC_FILTER:</td>
+<td>Specifies the search conditions used to limit the number of rows to be matched (E.g.
+<span style="color:#008000; background-color:#ffefbb">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the source table/view will be taken as the universal set.</td>
+</tr>
+<tr>
+<td valign="top">SRC_KEY_COLUMNS:</td>
+<td>Specifies a column or a comma-separated list of columns which is supposed to be a foreign key and will be used to join with DST_KEY_COLUMNS (supposed primary key of target table).</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>The target table to be checked and to be made up. Schema name is always required in the table name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_KEY_COLUMNS:</td>
+<td>Specifies a column or a comma-separated list of columns which is supposed to be a primary key of target table and can be used to join with SRC_KEY_COLUMNS of SRC_VIEW.</td>
+</tr>
+<tr>
+<td valign="top">DST_VAL_COLUMNS:</td>
+<td><span style="color:#808080">(Optional)</span> When insert a new compensating row into the target table, some non-key columns may need to be assigned as a special value (such as
+<span style="color:#008080">&lsquo;Dummy&rsquo;, &lsquo;Unknown&rsquo;, &lsquo;N/A&rsquo;, -1, &lsquo;1900-01-01&rsquo;&hellip;</span>). DST_VAL_COLUMNS specifies a column or a comma-separated list of columns (E.g.
+<span style="color:#008000; background-color:#ffefbb">GRP_ID, ROW_SRC</span>) to be assigned. A column that is listed in DST_KEY_COLUMNS can not be included in the DST_VAL_COLUMNS.</td>
+</tr>
+<tr>
+<td valign="top">SRC_VALUES:</td>
+<td><span style="color:#808080">(Optional)</span> If DST_VAL_COLUMNS is specified, and then SRC_VALUES is required. SRC_VALUES specifies a value expression or a comma-separated list of value expressions which will be loaded into DST_VAL_COLUMNS while making
+ up. An expression can be a constant (E.g. <span style="color:#008000; background-color:#ffefbb">
+-1, 'Made-up'</span>) or an expression references on SRC_VIEW (E.g. <span style="color:#008000; background-color:#ffefbb">
+-1, LAST_UPD</span>). It's natural that only unique rows (by key columns) will be inserted into the target table if all expressions only contain constants. Otherwise, the SRC_VIEW is responsible for ensuring the uniqueness of result set if an expression references
+ on a column(s) of SRC_VIEW.</td>
+</tr>
+</tbody>
+</table>
+<div>&nbsp;</div>
+<table border="0" cellspacing="0" cellpadding="3">
+<tbody>
+<tr>
+<td colspan="2" align="center">WASH_ISTR_<strong>MUP_NA</strong></td>
+</tr>
+<tr>
+<td colspan="2">Make up a N/A key &ndash; insert a special primary key into the target table as a reserved row for substituting N/A cases (such as null-references, exception replacement &hellip;) if it did not exist before.</td>
+</tr>
+<tr>
+<td valign="top"><span style="color:#0000ff">ISTR_ID</span>:</td>
+<td>The ISTR_ID embodies the inheritance from the base WASH_ISTR.</td>
+</tr>
+<tr>
+<td valign="top">DST_TABLE:</td>
+<td>The target table to be made up. Schema name is always required in the table name. (E.g.
+<span style="color:#008000; background-color:#ffefbb">ABC.TABLE_DST</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_KEY_COLUMNS:</td>
+<td>Specifies a column or a comma-separated list of columns which is the primary key of the target table. (E.g.
+<span style="color:#008000; background-color:#ffefbb">REF_ID</span>)</td>
+</tr>
+<tr>
+<td valign="top">DST_VAL_COLUMNS:</td>
+<td><span style="color:#808080">(Optional)</span> When insert a reserved row into the target table, some non-key columns may need to be assigned as special attributes (such as
+<span style="color:#008080">&lsquo;Dummy&rsquo;, &lsquo;Unknown&rsquo;, &lsquo;N/A&rsquo;, -1, &lsquo;1900-01-01&rsquo;&hellip;</span>). DST_VAL_COLUMNS specifies a column or a comma-separated list of columns (E.g.
+<span style="color:#008000; background-color:#ffefbb">GRP_ID, ROW_SRC</span>) to be assigned. A column that is listed in DST_KEY_COLUMNS can not be included in the DST_VAL_COLUMNS.</td>
+</tr>
+<tr>
+<td valign="top">MAKE_UP_KEYS:</td>
+<td>Introduces a constant or a comma-separated list of constants of primary key columns to be inserted if it did not exist (E.g.
+<span style="color:#008000; background-color:#ffefbb">-1</span>). There must be one data value for each column of DST_KEY_COLUMNS list in the same order. If the same key already exists, nothing will be updated on that row.</td>
+</tr>
+<tr>
+<td valign="top">MAKE_UP_VALUES:</td>
+<td><span style="color:#808080">(Optional)</span> If DST_VAL_COLUMNS is specified, and then MAKE_UP_VALUES is required. MAKE_UP_VALUES introduces a constant or a comma-separated list of constants which will be assigned to columns of DST_VAL_COLUMNS. The values
+ in the MAKE_UP_VALUES must be in the same order as the columns in DST_VAL_COLUMNS list. (E.g.
+<span style="color:#008000; background-color:#ffefbb">-1, 'N/A'</span>)</td>
+</tr>
+</tbody>
+</table>
+<p>Above is all metadata may need to be filled in instructions tables. The triggers behind these tables will check the validity of input metadata.</p>
+<p><strong>Build and Deploy</strong></p>
+<ul>
+<li>Development Phase </li></ul>
+<table border="0" cellspacing="0" cellpadding="4" style="margin-left:40px; margin-right:0px">
+<tbody>
+<tr>
+<td colspan="3"><span style="color:#808080">WASH_DEPLOY.</span><span style="color:blue">BUILD_AND_PUBLISH</span></td>
+</tr>
+<tr>
+<td colspan="3">The combination function for building and publishing a Wash Cycle.</td>
+</tr>
+<tr style="background-color:#e0e0e0; color:#808080; font-style:italic">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inCycle_ID</td>
+<td valign="top">&nbsp;</td>
+<td>The Wash Cycle to be built and deployed.</td>
+</tr>
+<tr>
+<td valign="top">inVer_Comment</td>
+<td align="center" valign="top">''</td>
+<td>Comment for this version.</td>
+</tr>
+<tr>
+<td valign="middle">inGen_Progress</td>
+<td align="center" valign="top">'Y'</td>
+<td>'Y': To generate progress status for every step;<br>
+'N': Does not generate the code for progress status.</td>
+</tr>
+<tr>
+<td valign="middle">inStep_Commit</td>
+<td align="center" valign="bottom">'N'</td>
+<td>'Y': Commit every step (consider of mass data);<br>
+'N': Commit once only at the end of whole wash cycle.</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom">Return Value:</td>
+<td>A new version number of this publish. (every time of publish will generate a new version)</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom"><em>Output:</em></td>
+<td>Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table
+<span style="color:#0000ff">WASH_VERSION</span> (with deployment status or error messages).</td>
+</tr>
+</tbody>
+</table>
+<p style="padding-left:30px">In many instances, developer may need to use individual steps for trial/debug convenience. Following diagram shows internal procedures of the whole build and deployment management.<br>
+<span style="color:#808080">(Labels in gray indicate the corresponding name of table, view, stored procedure or function)</span></p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=498670" alt="Build and Deploy"></p>
+<table border="0" cellspacing="0" cellpadding="4" style="margin-left:40px; margin-right:0px">
+<tbody>
+<tr>
+<td colspan="3"><span style="color:#808080">WASH_ENGINE.</span><span style="color:blue">PRECOMPILE</span></td>
+</tr>
+<tr>
+<td colspan="3">The procedure precompiles every step of wash-instructions under a wash cycle into DML SQL.</td>
+</tr>
+<tr style="background-color:#e0e0e0; color:#808080; font-style:italic">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inCycle_ID</td>
+<td valign="top">&nbsp;</td>
+<td>The wash cycle to be precompiled.</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom"><em>Output:</em></td>
+<td>All DML SQL are planned in the table <span style="color:#0000ff">WASH_DML_PLAN</span>.</td>
+</tr>
+</tbody>
+</table>
+<p style="padding-left:40px"><span style="color:#0000ff">VIEW_WASH_CYCLE_CODE</span> can be used to preview the complete code of stored procedure which will be generated for the wash cycle after precompilation.</p>
+<table border="0" cellspacing="0" cellpadding="4" style="margin-left:40px; margin-right:0px">
+<tbody>
+<tr>
+<td colspan="3"><span style="color:#808080">WASH_DEPLOY.</span><span style="color:blue">PUBLISH_PROCEDURE</span></td>
+</tr>
+<tr>
+<td colspan="3">The function publishes a precompiled wash cycle as a stored procedure.</td>
+</tr>
+<tr style="background-color:#e0e0e0; color:#808080; font-style:italic">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inCycle_ID</td>
+<td valign="top">&nbsp;</td>
+<td>The wash cycle to be published(deployed).</td>
+</tr>
+<tr>
+<td valign="top">inVer_Comment</td>
+<td align="center" valign="top">''</td>
+<td>Comment for this version.</td>
+</tr>
+<tr>
+<td valign="middle">inGen_Progress</td>
+<td align="center" valign="top">'Y'</td>
+<td>'Y': To generate progress status for every step;<br>
+'N': Does not generate the code for progress status.</td>
+</tr>
+<tr>
+<td valign="middle">inStep_Commit</td>
+<td align="center" valign="bottom">'N'</td>
+<td>'Y': Commit every step (consider of mass data);<br>
+'N': Commit once only at the end of whole wash cycle.</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom">Return Value:</td>
+<td>A new version number of this publish. (every time of publish will generate a new version)</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom"><em>Output:</em></td>
+<td>Accompanied by the stored procedure of the wash cycle being installed, a version snapshot is automatically generated and tracked for every publishing. All version history is stored in the table
+<span style="color:#0000ff">WASH_VERSION</span> (with deployment status or error messages).</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Deployment Phase </li></ul>
+<p style="padding-left:40px">As shown in above diagram, there are two ways of production deployment:<br>
+<br>
+- <span style="text-decoration:underline">Method 1</span> (recommended)<br>
+Distribute a manifest of metadata to production if the production database has the same setup of the DataWashroom environment as a deployment manager.<br>
+<br>
+- <span style="text-decoration:underline">Method 2</span> (left side)<br>
+Distribute the final stored procedure to production if the production database is not allow to have the DataWashroom for any reason, or you don't want people to think that you are too lazy to write those boring code. No one else would care your code was written
+ in your seat or was generated in washroom.</p>
+<p><strong>Utilities by Product</strong></p>
+<p>All database packages of this project are organized in the package dependency graph below.</p>
+<p><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=515630" alt="Packages Dependence" width="636" height="268"></p>
+<p>The bottom 3 blue packages PROGRESS_TRACK, DEPLOY_UTILITY and CACHE_UTILITY were designed to be used independently.</p>
+<ul>
+<li>PROGRESS_TRACK<br>
+This is a generalized redesign (from the parent project <a href="http://view.codeplex.com" target="_blank">
+http://view.codeplex.com</a>) of Progress Status Tracker which provides 4 public interfaces:
+</li></ul>
+<div style="padding-left:40px">- <span style="color:#808080">PROGRESS_TRACK.</span>REGISTER<br>
+- <span style="color:#808080">PROGRESS_TRACK.</span>GO_STEP<br>
+- <span style="color:#808080">PROGRESS_TRACK.</span>ON_ERROR<br>
+- <span style="color:#808080">PROGRESS_TRACK.</span>POLLING<br>
+<br>
+A common usage can be like the below sample (for Oracle version):</div>
+<div style="padding-left:40px; color:black; background-color:white">
+<pre>    ...
+    tProgress_ID    <span style="color:#008080">PLS_INTEGER</span>;
+<span style="color:blue">BEGIN</span>
+    ...
+    tProgress_ID := <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">PROGRESS_TRACK.</span>REGISTER(tTotal_Steps);
+    ...
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color:blue">NULL</span>, <span style="color:#a31515">'Status information 1 ...'</span>);
+    ...
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color:blue">NULL</span>, <span style="color:#a31515">'Status information 2 ...'</span>);
+    ...
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color:blue">NULL</span>, <span style="color:#a31515">'Status information 3 ...'</span>);
+    ...
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color:blue">NULL</span>, <span style="color:#a31515">'Status information n ...'</span>);
+    ...
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">PROGRESS_TRACK.</span>GO_STEP(tProgress_ID, <span style="color:blue">NULL</span>, <span style="color:#a31515">'Done.'</span>);
+<span style="color:#008080">EXCEPTION</span>
+<span style="color:blue">WHEN</span> <span style="color:#008080">OTHERS </span><span style="color:blue">THEN</span>
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">PROGRESS_TRACK.</span>ON_ERROR(tProgress_ID, <span style="color:#008080">SQLERRM</span>);
+    ...
+<span style="color:blue">END</span>;</pre>
+</div>
+<div style="padding-left:40px">Refer to the generated code of a wash stored procedure (with
+<span style="color:#808080">inGen_Progress </span>option turned on) for more information about further binding to a business flow.<br>
+Then the view VIEW_PROGRESS_LOG or VIEW_WASH_LAST_PROGRESS_LOG can be used to monitor the whole ongoing progress in background.<br>
+Or, UI can use the procedure <span style="color:#808080">PROGRESS_TRACK.</span>POLLING to display a progress bar.</div>
+<ul>
+<li>DEPLOY_UTILITY </li></ul>
+<table border="0" cellspacing="0" cellpadding="4" style="margin-left:40px; margin-right:0px">
+<tbody>
+<tr>
+<td colspan="3"><span style="color:#808080">DEPLOY_UTILITY.</span><span style="color:blue">EXPORT_INSERT_SQL</span></td>
+</tr>
+<tr>
+<td colspan="3">This function exports rows of a table into a script of INSERT SQL. It works like the toolbar button [Export Query Results...<em><span style="color:#808080">to SQL file</span></em>] on PL/SQL IDE, but provides as a API and solves the reserved
+ characters [<span style="color:red; background-color:#ffefbb">&amp;</span>] and [<span style="color:red; font-weight:bold; background-color:#ffefbb">'</span>].</td>
+</tr>
+<tr style="background-color:#e0e0e0; color:#808080; font-style:italic">
+<td valign="top">Parameters</td>
+<td valign="top">Default</td>
+<td>Description</td>
+</tr>
+<tr>
+<td valign="top">inTable_Name</td>
+<td valign="top">&nbsp;</td>
+<td>The table that rows to be exported.</td>
+</tr>
+<tr>
+<td valign="top">inSrc_Filter</td>
+<td align="center" valign="top"><span style="color:#808080">NULL</span></td>
+<td><span style="color:#808080">(Optional)</span>Specifies the search conditions used to limit the number of rows to be exported (E.g.
+<span style="color:#008000; background-color:#ffefbb">ID_TYPE = 'ISIN'</span>). If this column is NULL, all the rows from the table will be exported.</td>
+</tr>
+<tr>
+<td valign="middle">inOrder_By</td>
+<td align="center" valign="top"><span style="color:#808080">NULL</span></td>
+<td><span style="color:#808080">(Optional)</span>Specifies the order of rows to be generated in INSERT script. (E.g.
+<span style="color:#008000; background-color:#ffefbb">TRAN_NO DESC, PRICE</span>)</td>
+</tr>
+<tr>
+<td colspan="2" align="center" valign="bottom">Return Value:</td>
+<td>The complete script of INSERT SQLs.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>CACHE_UTILITY </li></ul>
+<p style="padding-left:40px">CACHE_CONTROL is the central control table which defines a unique identifier and expiration for each cache.<br>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=522442" alt="Cache Periods" width="564" height="80"><br>
+&nbsp;<br>
+The CACHE_UTILITY package provides a global cache control similar to <a title="Reader-Writer Locks" href="http://msdn.microsoft.com/en-us/library/bz6sth95.aspx" target="_blank">
+Reader-Writer Locks (refer to MSDN)</a>.<br>
+Refresh Lock is different from write lock:<br>
+- Only work in critical period while cache expiring, as shown above.<br>
+- Only one refresher can obtain the token to exclusively access for refreshing, other blocked refreshers will not refresh again when they enter the lock, seen in the circuit diagram below.<br>
+&nbsp;<br>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=522443" alt="Read-Write Lock" width="445" height="514"></p>
+<ul>
+<li><span style="color:#808080">CACHE_UTILITY.</span><span style="color:#ff0000">ENTER</span>_REFRESH_LOCK
+</li><li><span style="color:#808080">CACHE_UTILITY.</span><span style="color:#ff0000">EXIT</span>_REFRESH_LOCK
+</li><li><span style="color:#808080">CACHE_UTILITY.</span><span style="color:#008000">ENTER</span>_READ_LOCK
+</li><li><span style="color:#808080">CACHE_UTILITY.</span><span style="color:#008000">EXIT</span>_READ_LOCK
+</li></ul>
+<p style="padding-left:20px">It is not recommended to use these APIs in application level directly.<br>
+Next section [Singleton] will explain the risk of deadlocks and corresponding precautions in a higher level encapsulation.</p>
+<p><strong>Extensibility</strong> and <strong>Applicability</strong></p>
+<p>Refer to the source code of 7 build-in wash instructions, extened instructions can also be customized when necessary.</p>
+<p>The original intention of DataWashroom is designed for data pretreatment, not for entire processings. To simplify subsequent processing system designs by ensuring the data quality in the central pretreatment stage.<br>
+So the generated stored procedure has following characteristics:</p>
+<ul>
+<li>Parameterless<br>
+It's sufficient for most centralized pretreatment applications.<br>
+If you really need to pass some parameters to the generated stored procedure, the way of implementing a parameterize view can be used for reference
+<em>(Oracle solution)</em>:
+<ol>
+<li>Define all parameters as member variables in a database package,<br>
+Encapsulate each of them by a get accessor (public function) and a set accessor <span style="color:#808080">
+(Optional)</span>, just like a property of a class; </li><li>Create a view to expose these member variables; </li><li>Set values to these member variables before execute the generated stored procedure.<br>
+These package-based variables act as globals within a single session (connection) scope.
+</li></ol>
+</li><li>Singleton<br>
+A centralized data pretreatment system is normally hosted as a singleton instance to avoid unnecessary repetition of warm-up time. Two common scenarios:
+<ol>
+<li>Act as a scheduled job without considering any concurrency.<br>
+Scheduled job calls the generated stored procedure directly&nbsp;-&nbsp;This use pattern should always be considered as the top priority for most backoffice applications. If daily (nighttime) refreshing can not satisfy the requirement of timeliness, then consider
+ following alternatives.&nbsp; </li><li>Be triggered on-demand by a central controller which handles critical section and expiry window.<br>
+<em><strong><span style="color:#0000ff">WASH_GLOBAL_CACHE</span></strong> Package:</em><br>
+Always enclose those queries which will select from global cache in a pair of <span style="color:#808080">
+WASH_GLOBAL_CACHE.</span><span style="color:#ff0000">ENTER_LOCK</span><span style="color:#808080">(inCycle_ID)</span> and
+<span style="color:#808080">WASH_GLOBAL_CACHE.</span><span style="color:#ff0000">EXIT_LOCK</span><span style="color:#808080">(inCycle_ID)<br>
+</span><em>(Note: Don't forget to EXIT_LOCK in exception block to make sure the read lock will always be released)</em>.<br>
+The CACHE_EXPIRY (minutes) is defined in CACHE_CONTROL table, a new entry will be there accompanied by a new wash CYCLE_ID be created, default as 240 minutes (4 hours).
+</li></ol>
+<blockquote dir="ltr" style="margin-right:0px">
+<p>Following diagram shown the internal implementation of cache lock mechanism.</p>
+</blockquote>
+<p style="padding-left:60px"><img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=518069" alt="Global Wash Cache" width="483" height="578"></p>
+<p style="padding-left:30px">In practice, a corresponding schema would be allocated for a cache to organize its target tables. This would help consumers to be clear which cache is using. Also combined with naming convention (E.g. suffix of schema name, prefix
+ of table name), whatever a schema contains a single cache or multiple caches ... all roads lead to a clarity, and reduce unnecessary configurations.</p>
+<span style="text-decoration:underline">Risks of dead lock</span>
+<ul>
+<li>The <span style="color:#808080">WASH_GLOBAL_CACHE.</span>EXIT_LOCK might be forgotten to call, then the lock would never be released until a session terminates.<br>
+A similar way introduced by MSDN to avoid forgetting:
+<ol>
+<li>Create a stored procedure that encapsulates together your DML operations which will query from a cache (a cache is a set of tables). Put this stored procedure in your package body only as a private member, don't expose it as a public member in package.
+ For example:
+<div style="color:black; background-color:white">
+<pre><span style="color:blue">PROCEDURE</span> MY_DM_FROM_CACHEA(...)
+<span style="color:blue">AS</span>
+<span style="color:blue">BEGIN</span>
+    ...
+    <span style="color:blue">INSERT</span> <span style="color:blue">INTO</span> XYZ.LOCAL_TABLE1 (...)
+    <span style="color:blue">SELECT</span> ... <span style="color:blue">FROM</span> ABC.GLOBAL_CACHE_TABLE1, ... <span style="color:blue">WHERE</span> ...;
+    ...
+    <span style="color:blue">UPDATE</span> XYZ.LOCAL_TABLE2 L
+    <span style="color:blue">SET</span> COL1 = (<span style="color:blue">SELECT</span> G.VAL1 <span style="color:blue">FROM</span> ABC.GLOBAL_CACHE_TABLE2 G <span style="color:blue">WHERE</span> ...);
+    ...
+<span style="color:blue">END</span> MY_DM_FROM_CACHEA;</pre>
+</div>
+</li><li>Create another wrapper stored procedure that handles the lock and call the private stored procedure. For example:
+<div style="color:black; background-color:white">
+<pre><span style="color:blue">PROCEDURE</span> PUB_DM_FROM_CACHEA(...)
+<span style="color:blue">AS</span>
+    tCycle_ID <span style="color:#008080">CONSTANT</span> <span style="color:#0000ff">VARCHAR2(32)</span> := <span style="color:#a31515">'DPT.WASH_A'</span>;<br>    <span style="color:green">-- The Cycle ID is also the Cache ID.</span>
+<span style="color:blue">BEGIN</span>
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">WASH_GLOBAL_CACHE.</span>ENTER_LOCK<span style="color:#808080">(tCycle_ID)</span>;
+
+    <strong>MY_DM_FROM_CACHEA</strong>(...);
+
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">WASH_GLOBAL_CACHE.</span>EXIT_LOCK<span style="color:#808080">(tCycle_ID)</span>;
+<span style="color:#ff00ff">EXCEPTION</span>
+    <span style="color:blue">WHEN</span> OTHERS <span style="color:blue">THEN</span>
+        <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">WASH_GLOBAL_CACHE.</span>EXIT_LOCK<span style="color:#808080">(tCycle_ID)</span>;
+        <span style="color:#ff00ff">RAISE</span>;
+<span style="color:blue">END</span> PUB_DM_FROM_CACHEA;</pre>
+</div>
+</li></ol>
+</li><li>Multiple caches' data might be used in the same query, and multiple concurrent sessions interlace them in unpredicted order.
+<br>
+Following aspects should be taken into comprehensive precautions:
+<ol>
+<li>Cache Organizing<br>
+In order to minimise this circumstances, arrange necessary tables in the same cache if they are usually coupling together in most use cases. So investigating and analysising are crucial to cache planning.
+</li><li>Multi-cache Lock<br>
+WASH_GLOBAL_CACHE will reject nested locks and cross locks.<br>
+<table>
+<tbody>
+<tr>
+<td style="color:#008000; text-align:center">OK</td>
+<td style="color:#ff0000; text-align:center"><em>Throw Exception</em></td>
+<td style="color:#ff0000; text-align:center"><em>Throw Exception</em></td>
+</tr>
+<tr>
+<td>
+<div style="color:green; background-color:white">
+<pre>ENTER_LOCK(<span style="color:#0000ff">'CACHEA'</span>);
+  DM_CACHEA(...);
+EXIT_LOCK(<span style="color:#0000ff">'CACHEA'</span>);
+
+ENTER_LOCK(<span style="color:#0000ff">'CACHEB'</span>);
+  DM_CACHEB(...);
+EXIT_LOCK(<span style="color:#0000ff">'CACHEB'</span>);</pre>
+</div>
+</td>
+<td>
+<div style="color:red; background-color:white; text-decoration:line-through">
+<pre>ENTER_LOCK(<span style="color:#0000ff">'CACHEA'</span>);
+  ENTER_LOCK(<span style="color:#0000ff">'CACHEB'</span>);
+
+    DM_CACHEAB(...);
+
+  EXIT_LOCK(<span style="color:#0000ff">'CACHEB'</span>);
+EXIT_LOCK(<span style="color:#0000ff">'CACHEA'</span>);</pre>
+</div>
+</td>
+<td>
+<div style="color:red; background-color:white; text-decoration:line-through">
+<pre>ENTER_LOCK(<span style="color:#0000ff">'CACHEA'</span>);
+  DM_CACHEA(...);
+ENTER_LOCK(<span style="color:#0000ff">'CACHEB'</span>);
+  DM_CACHEAB(...);
+EXIT_LOCK(<span style="color:#0000ff">'CACHEA'</span>);
+  DM_CACHEB(...);
+EXIT_LOCK(<span style="color:#0000ff">'CACHEB'</span>);</pre>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+In order to lock multiple caches as a combination of critical section, please use overloads of ENTER_LOCK and EXIT_LOCK to an array of cache IDs, as example below:
+<div style="color:black; background-color:white">
+<pre><span style="color:blue">PROCEDURE</span> PUB_DM_FROM_CACHEAB(...)
+<span style="color:blue">AS</span>
+    tCycle_IDs <span style="color:#008080">CONSTANT</span> <span style="color:#0000ff">VCH_ID_ARY</span> := <span style="color:#0000ff">VCH_ID_ARY</span>(<span style="color:#a31515">'DPT.WASH_A', 'MKT.WASH_B' ...</span>);   <span style="color:green">-- An array of Cache IDs.</span>
+<span style="color:blue">BEGIN</span>
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">WASH_GLOBAL_CACHE.</span>ENTER_LOCK<span style="color:#808080">(tCycle_IDs)</span>;
+
+    <strong>MY_DM_FROM_CACHEAB</strong>(...);
+
+    <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">WASH_GLOBAL_CACHE.</span>EXIT_LOCK<span style="color:#808080">(tCycle_IDs)</span>;
+<span style="color:#ff00ff">EXCEPTION</span>
+    <span style="color:blue">WHEN</span> OTHERS <span style="color:blue">THEN</span>
+        <span style="color:#c0c0c0">VPI.</span><span style="color:#808080">WASH_GLOBAL_CACHE.</span>EXIT_LOCK<span style="color:#808080">(tCycle_IDs)</span>;
+        <span style="color:#ff00ff">RAISE</span>;
+<span style="color:blue">END</span> PUB_DM_FROM_CACHEAB;</pre>
+</div>
+The internal implementation of overloads guarantee all caches <span style="color:#808080">
+(parameterized by an array)</span> will always be locked in the same order by different sessions.
+</li><li>Cache-lock Monitor<br>
+It is impossible to avoid dead locks completely. The <span style="color:#808080">
+VPI.</span><span style="color:#0000ff">VIEW_CACHE_LOCK</span> lists the locks currently held by the global cache control, it can be polled from your own alarm system.<br>
+Structure application design as succinctly as possible, that's the ultimate approach. Everybody get sick sometime as long as we live, this should not be as an excuse not to keep clean.
+</li></ol>
+</li><li>Effective scope of cache lock<br>
+Cache locks are automatically released by database engine when a session terminates, so client side applications need special attention: Don't split up a database processing into many small pieces and separate them through a lot of database connections(sessions)
+ -- open a connection, do a small piece of manipulation, close the connection, open another connection, do another small piece, close ... Cache lock does not work for thus client application. This almost like a man rushes into washroom, does a piece of No.1
+ job, backs to office, runs again to washroom right away, does a piece of No.2 job, backs to office again ... so on and so on, how to reserve a spot in public washroom like a reserved parking spot?
+</li><li style="color:#c0c0c0">Cache Safe Period<br>
+As an additional option, if some end applications are not time sensitive that much, it could be fine to query caches without any explicit lock during the safe period. For example a man-generated report which is just for in-house informal research purposes,
+ you can check all referenced caches at the beginning,<br>
+- if the rest of safe period is not enough time to run related queries (estimation), then declines the human with message: &quot;My cache system is busy in refreshing at the moment, please try again later. Sorry for the inconvenience, my dear!&quot;;<br>
+- else go ahead as you love at your own risk of data incompleteness in case your querying time runs too long (than estimated) to fall into crises... You should have a good sense of the result data is integral or not, so that you can retry later.<br>
+The view VPI.VIEW_CACHE_SAFE_PERIOD can be used to determine the safety, column names show as upper case in the figure below:<br>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=524983" alt="" width="572" height="200"><br>
+&nbsp;<br>
+In order to make this option feasible, a higher level system plan may consider to preassign some consumers as female applications/reports with lock(period), other clients as male applications/reports without lock(period), ensure the cache will not be extinct.<br>
+&nbsp; </li></ul>
+</li><li>Sequentiality<br>
+The adoption of executing in sequence was based on the design target, the similar consideration as most washing machines.<br>
+This is one reason why although the instruction infrastructure allow custome instructions to be extended, but it is not encouraged to over extend too beyond the target of data pretreatment.
+<span style="color:#808080"><em>(-- A cardiovascular medicine is not intended to treat haemorrhoid, or vice versa.)</em></span><br>
+<br>
+Another project for data mid-processing aided designing system based on the foundation of
+<a href="http://dbparallel.codeplex.com/" target="_blank">http://dbparallel.codeplex.com/</a> and
+<a href="http://view.codeplex.com/" target="_blank">http://view.codeplex.com/</a> may be in the plan later, which will be good at parallelism.
+</li></ul>
+<p><strong>Prevention</strong> over <strong>Treatment</strong></p>
+<p style="padding-left:30px">Such note often seen in public washrooms:<br>
+<img src="http://download-codeplex.sec.s-msft.com/Download?ProjectName=datawashroom&DownloadId=500848" alt="Hand Washing" width="339" height="136"><br>
+<span style="color:#808080">(See: the</span> Before <span style="color:#808080">and</span> After
+<span style="color:#808080">Triggers)</span><br>
+<br>
+An example for data, [START_DATE, END_DATE] is one of common modes for storing slow change data in back office systems, the date range is error prone (overlapped or fragmentary) for manual maintenance without validation. However, introducing the checksum could
+ avoid mistake as easy as washing hands. E.g.</p>
+<div style="color:black; background-color:white; padding-left:30px">
+<pre><span style="color:blue">CREATE TABLE</span> ABC.SEC_HOLDINGS
+(
+    SEC_ID      VARCHAR2(16)                                     <span style="color:blue">NOT NULL</span>,
+    HOLDINGS    NUMBER(19)                                       <span style="color:blue">NOT NULL</span>,
+    START_DATE  <span style="color:blue">DATE DEFAULT</span> TO_DATE(<span style="color:#a31515">'1990-01-01'</span>, 'yyyy-mm-dd') <span style="color:blue">NOT NULL</span>,
+    END_DATE    <span style="color:blue">DATE DEFAULT</span> TO_DATE(<span style="color:#a31515">'9999-12-31'</span>, 'yyyy-mm-dd') <span style="color:blue">NOT NULL</span>,
+
+    <span style="color:blue">CONSTRAINT</span> PK_SEC_HOLDINGS <span style="color:blue">PRIMARY KEY</span> (SEC_ID, START_DATE),
+    <span style="color:blue">CONSTRAINT</span> UK_SEC_HOLDINGS <span style="color:blue">UNIQUE</span> (END_DATE, SEC_ID),
+    <span style="color:blue">CONSTRAINT</span> CK_SEC_HOLDINGS_START_END <span style="color:blue">CHECK</span> (START_DATE &lt;= END_DATE)
+);</pre>
+</div>
+<div style="color:black; background-color:white; padding-left:30px">
+<pre><span style="color:blue">CREATE OR</span> <span style="color:magenta">REPLACE</span> <span style="color:blue">TRIGGER</span> ABC.TRG_SEC_HOLDINGS
+<span style="color:blue">AFTER INSERT OR DELETE OR UPDATE OF</span> START_DATE, END_DATE <span style="color:blue">ON</span> ABC.SEC_HOLDINGS
+<span style="color:blue">DECLARE</span>
+    tSec_ID VARCHAR2(16);
+<span style="color:blue">BEGIN</span>
+    <span style="color:blue">SELECT</span>
+        <span style="color:magenta">MIN</span>(SEC_ID) <span style="color:blue">INTO</span> tSec_ID
+    <span style="color:blue">FROM</span>
+    (
+        <span style="color:blue">SELECT</span>
+            SEC_ID,
+            <span style="color:magenta">SUM</span>(END_DATE - START_DATE &#43; 1) - 
+               (<span style="color:magenta">MAX</span>(END_DATE) - <span style="color:magenta">MIN</span>(START_DATE) &#43; 1) <span style="color:blue">AS</span> <strong><span style="color:#ff0000">CHECKSUM</span></strong>
+        <span style="color:blue">FROM</span>
+            ABC.SEC_HOLDINGS
+        <span style="color:blue">GROUP BY</span>
+            SEC_ID
+    )
+    <span style="color:blue">WHERE</span>   ROWNUM    = 1
+        <span style="color:blue">AND</span> <span style="color:#ff0000">CHECKSUM</span> &lt;&gt; 0;
+
+    <span style="color:blue">IF</span> tSec_ID <span style="color:blue">IS NOT NULL THEN</span>
+        RAISE_APPLICATION_ERROR(-20021,
+            <span style="color:#a31515">'Some [START_DATE, END_DATE]s are overlapped or fragmentary!
+             First issue SEC_ID: '</span> || tSec_ID);
+    <span style="color:blue">END IF</span>;
+<span style="color:blue">END</span> TRG_SEC_HOLDINGS;</pre>
+</div>
+<div style="padding-left:30px">This is just a sample (for a small table) to show the CHECKSUM algorithms. In practice, (for Oracle solution) a row level trigger should be used in conjunction with the statement level trigger to validate only changed IDs when
+ the table has large data; (for SQL Server solution) it's even simpler. The main point here is to illustrate that it would always be much easier to prevent a mistake from the source input. But, it should be noted that this sample does not recommend to abuse
+ triggers - mysophobia! After all, the life is not only for eating, the data is not only for inputting.<br>
+However, if the same validation processing was requested to repeat in subsequent users' works, it would become a calamity for whole system performance and clarity. This is similar to a car factory doesn't establish an acceptable vendor quality assurance system
+ (before reaching assembly line), but ask every workstations on the assembly line to inspect every accessories/parts while assembling them into a car - repairing the part if fault and marking a special flag ... can you see how complex and efficient the assembly
+ line would be!<br>
+Cleaning runway of airfield is airport company's responsibility. Airline companies should not be held respnsible for runway clearance.<br>
+&nbsp;</div>
+<p><strong>Data Pollution Report</strong></p>
+<p style="padding-left:30px">Distributing a complete list of bad data (base on known rules) everyday to every data producers may help people to look for accurate pathogeny. Sooner or later each source of problem application(design) will be laid bare. No matter
+ how arrogant or humble, strong or weak ... a application is, every data sits equal on the toilet.</p>
+<p style="padding-left:30px">A utility for generating these queries(views) of data pollution report will be introduced in later release.</p>
+<p><strong>Requirement on requirement</strong><br>
+In order to have a compact and well structured requirement for a clean system, some basic principles are recommended to keep in mind during the requirements analysis.</p>
+<ol>
+<li>Disentangle functional dependencies between attributes in source systems base on true business meanings.<br>
+As a isolation of <span style="color:#ff0000">basis data</span>, the target system needs to carry out 3NF or BCNF. Some normalized relationships might have been safeguarded in source systems already, the requirement specifications is required to list the rest
+ of them, and some redundant attributes can be cancelled. </li><li>Unify different units of measurement into a standardized system of units.<br>
+For example, converting all units of measurement into internationally standard measurement units (miles/h =&gt; km/h, yards =&gt; metres) if source systems use multiple different systems of units; converting all native dollars into the settlement currency;
+ converting mixed ISO code systems(two-letter code and three-letter code) into a pure ISO code system (either one of them)... etc.
+</li><li>Act as a global cache of basis data from source systems, to provide downstream back-office systems a clean data source with optimization for query performance is a key service purpose of the DataWashroom. It's requirement specification's responsibility
+ to investigate:
+<ul>
+<li>Which attributes are often used as keys to look up others? </li><li>Which attributes are usually coupling together in consumers' queries? </li><li>What amount of data and growthrate of size? </li><li>What probability distributions of different partitions of data being used in most queries?
+</li></ul>
+Etc., these investigations will be substantial arguments for the physical design of target schema.<br>
+&nbsp; </li><li>Summarize data quality requirements into 3 basic parts:
+<ul>
+<li>Regular rules within the same row.<br>
+Such as: non-null, reasonable values range and comparisons, etc. </li><li>Business keys uniqueness, relationships conflict. </li><li>Relation-chains directivity and connectivity. </li></ul>
+</li></ol>
+<p>The sufficient analyses is intended to simplify solutions through inductiveness trimness and summary, not to complicate matters.</p>
+<p><strong>Supported Databases</strong></p>
+<ul>
+<li>Oracle<br>
+- Supported.<br>
+&nbsp; </li><li>SQL Server<br>
+- To be implemented later... </li></ul>
+<p><strong>Contribute</strong></p>
+<ul>
+<li>Welcome all feedback through the CodePlex project (through comments, patches, or items in the Issue Tracker);
+</li><li>Earnestly request adding implementation for other databases; </li></ul>
+</div><div class="ClearBoth"></div>
